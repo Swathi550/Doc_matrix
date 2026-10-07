@@ -10,12 +10,12 @@ def create_docmatrix_icon(size=1024):
     # 1. Base Image
     base = Image.new("RGBA", (size, size), (0, 0, 0, 0))
 
-    # Gradient background
+    # Gradient background (Deep Emerald / Forest Slate)
     bg = Image.new("RGBA", (size, size), (0, 0, 0, 255))
     bg_draw = ImageDraw.Draw(bg)
-    c_top = (14, 36, 69)      # #0E2445
-    c_mid = (10, 31, 60)      # #0A1F3C
-    c_bot = (5, 19, 38)       # #051326
+    c_top = (14, 61, 47)      # #0E3D2F
+    c_mid = (11, 53, 40)      # #0B3528
+    c_bot = (5, 28, 20)       # #051C14
 
     for y in range(size):
         t = y / float(size)
@@ -39,12 +39,12 @@ def create_docmatrix_icon(size=1024):
 
     base.paste(bg, (0, 0), mask)
 
-    # Outer border
+    # Outer border (Mint glow)
     draw = ImageDraw.Draw(base)
     draw.rounded_rectangle(
         [s(6), s(6), size - s(7), size - s(7)],
         radius=int(s(110)),
-        outline=(20, 184, 166, 120),
+        outline=(16, 185, 129, 140),
         width=int(s(6))
     )
 
@@ -53,7 +53,7 @@ def create_docmatrix_icon(size=1024):
     glow_draw = ImageDraw.Draw(glow)
     glow_draw.ellipse(
         [s(256 - 190), s(256 - 190), s(256 + 190), s(256 + 190)],
-        fill=(20, 184, 166, 80)
+        fill=(16, 185, 129, 90)
     )
     glow = glow.filter(ImageFilter.GaussianBlur(int(s(45))))
     base = Image.alpha_composite(base, glow)
@@ -75,15 +75,15 @@ def create_docmatrix_icon(size=1024):
                 pts.append((cx + r * math.cos(angle), cy + r * math.sin(angle)))
             draw.line(pts, fill=color, width=int(width))
 
-    draw_dashed_circle(s(256), s(256), s(196), (29, 111, 232, 70), dash_len=s(10), space_len=s(10), width=s(2.5))
-    draw_dashed_circle(s(256), s(256), s(140), (20, 184, 166, 55), dash_len=s(8), space_len=s(8), width=s(2))
+    draw_dashed_circle(s(256), s(256), s(196), (5, 150, 105, 75), dash_len=s(10), space_len=s(10), width=s(2.5))
+    draw_dashed_circle(s(256), s(256), s(140), (16, 185, 129, 65), dash_len=s(8), space_len=s(8), width=s(2))
 
     # 4. Matrix Corner Connectors & Nodes
     corner_nodes = [
-        (s(110), s(110), (20, 184, 166), (127, 224, 176)),
-        (s(402), s(110), (29, 111, 232), (76, 154, 255)),
-        (s(110), s(402), (29, 111, 232), (76, 154, 255)),
-        (s(402), s(402), (20, 184, 166), (127, 224, 176)),
+        (s(110), s(110), (16, 185, 129), (52, 211, 153)),
+        (s(402), s(110), (5, 150, 105), (16, 185, 129)),
+        (s(110), s(402), (5, 150, 105), (16, 185, 129)),
+        (s(402), s(402), (16, 185, 129), (52, 211, 153)),
     ]
 
     diag_targets = [(s(185), s(185)), (s(327), s(185)), (s(185), s(327)), (s(327), s(327))]
@@ -95,19 +95,18 @@ def create_docmatrix_icon(size=1024):
         for step_i in range(0, steps, 2):
             p1 = (nx + dx * (step_i / steps), ny + dy * (step_i / steps))
             p2 = (nx + dx * (min(step_i + 1, steps) / steps), ny + dy * (min(step_i + 1, steps) / steps))
-            draw.line([p1, p2], fill=(20, 184, 166, 90), width=int(s(2.5)))
+            draw.line([p1, p2], fill=(16, 185, 129, 90), width=int(s(2.5)))
 
     for nx, ny, stroke_c, fill_c in corner_nodes:
-        draw.ellipse([nx - s(18), ny - s(18), nx + s(18), ny + s(18)], fill=(10, 31, 60, 255), outline=stroke_c + (220,), width=int(s(3.5)))
+        draw.ellipse([nx - s(18), ny - s(18), nx + s(18), ny + s(18)], fill=(11, 53, 40, 255), outline=stroke_c + (220,), width=int(s(3.5)))
         draw.ellipse([nx - s(7), ny - s(7), nx + s(7), ny + s(7)], fill=fill_c + (255,))
 
-    # 5. Bold Healthcare Cross
-    # Create gradient fill
+    # 5. Bold Healthcare Cross (Emerald to Mint gradient)
     cross_grad = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     cg_draw = ImageDraw.Draw(cross_grad)
-    c1 = (29, 111, 232)   # #1D6FE8
-    c2 = (20, 184, 166)   # #14B8A6
-    c3 = (16, 185, 129)   # #10B981
+    c1 = (5, 150, 105)    # #059669
+    c2 = (16, 185, 129)   # #10B981
+    c3 = (52, 211, 153)   # #34D399
 
     for y in range(size):
         t = y / float(size)
@@ -134,8 +133,8 @@ def create_docmatrix_icon(size=1024):
     # Glow shadow behind cross
     cross_glow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     cglow_draw = ImageDraw.Draw(cross_glow)
-    cglow_draw.rounded_rectangle([s(204), s(96), s(308), s(416)], radius=int(s(34)), fill=(20, 184, 166, 140))
-    cglow_draw.rounded_rectangle([s(96), s(204), s(416), s(308)], radius=int(s(34)), fill=(20, 184, 166, 140))
+    cglow_draw.rounded_rectangle([s(204), s(96), s(308), s(416)], radius=int(s(34)), fill=(16, 185, 129, 140))
+    cglow_draw.rounded_rectangle([s(96), s(204), s(416), s(308)], radius=int(s(34)), fill=(16, 185, 129, 140))
     cross_glow = cross_glow.filter(ImageFilter.GaussianBlur(int(s(20))))
 
     base = Image.alpha_composite(base, cross_glow)
@@ -153,21 +152,20 @@ def create_docmatrix_icon(size=1024):
         (s(392), s(256)),
     ]
 
-    # Render pulse cleanly using a dedicated mask to avoid joint artifacts
-    # A. Pulse Cyan Glow Layer
+    # Pulse Mint Glow Layer
     glow_mask = Image.new("L", (size, size), 0)
     gm_draw = ImageDraw.Draw(glow_mask)
     gm_draw.line(pulse_pts, fill=255, width=int(s(24)), joint="round")
     for pt in pulse_pts:
         gm_draw.ellipse([pt[0] - s(12), pt[1] - s(12), pt[0] + s(12), pt[1] + s(12)], fill=255)
 
-    pulse_glow = Image.new("RGBA", (size, size), (20, 184, 166, 210))
+    pulse_glow = Image.new("RGBA", (size, size), (16, 185, 129, 210))
     pulse_glow_layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     pulse_glow_layer.paste(pulse_glow, (0, 0), glow_mask)
     pulse_glow_layer = pulse_glow_layer.filter(ImageFilter.GaussianBlur(int(s(7))))
     base = Image.alpha_composite(base, pulse_glow_layer)
 
-    # B. Pulse Crisp White Stroke Layer
+    # Pulse Crisp White Stroke Layer
     white_mask = Image.new("L", (size, size), 0)
     wm_draw = ImageDraw.Draw(white_mask)
     wm_draw.line(pulse_pts, fill=255, width=int(s(14)), joint="round")
@@ -179,19 +177,17 @@ def create_docmatrix_icon(size=1024):
 
     draw = ImageDraw.Draw(base)
 
-    # C. Data Matrix Peak Dots
-    # Peak (244, 146)
-    draw.ellipse([s(244) - s(9), s(146) - s(9), s(244) + s(9), s(146) + s(9)], fill=(127, 224, 176, 255))
+    # Data Matrix Peak Dots
+    draw.ellipse([s(244) - s(9), s(146) - s(9), s(244) + s(9), s(146) + s(9)], fill=(52, 211, 153, 255))
     draw.ellipse([s(244) - s(4), s(146) - s(4), s(244) + s(4), s(146) + s(4)], fill=(255, 255, 255, 255))
 
-    # Valley (274, 362)
-    draw.ellipse([s(274) - s(9), s(362) - s(9), s(274) + s(9), s(362) + s(9)], fill=(76, 154, 255, 255))
+    draw.ellipse([s(274) - s(9), s(362) - s(9), s(274) + s(9), s(362) + s(9)], fill=(16, 185, 129, 255))
     draw.ellipse([s(274) - s(4), s(362) - s(4), s(274) + s(4), s(362) + s(4)], fill=(255, 255, 255, 255))
 
     return base
 
 if __name__ == '__main__':
-    print("Generating refined master icon...")
+    print("Generating refined master icon in fresh medical green...")
     master = create_docmatrix_icon(1024)
     master.save(r"c:\Users\LENOVO\Desktop\doc-matrix - Copy\doc-matrix\public\icon-master-1024.png", "PNG")
 
