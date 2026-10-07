@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Menu, X, ArrowRight, Check, Activity, UserRound, Stethoscope, Building2, FlaskConical, Pill,
+  Menu, X, ArrowRight, Check, UserRound, Stethoscope, Building2, FlaskConical, Pill,
   MessagesSquare, CalendarCheck, UserPlus, LogIn, ClipboardCheck, ListOrdered, FileText, CreditCard,
   Repeat, Bell, BarChart3, ShieldCheck, LayoutDashboard, Plug, FolderHeart, HeartPulse, Layers,
   Eye, Gauge, Network, Share2, Radio, Microscope, CalendarClock
@@ -100,7 +100,10 @@ export default function App() {
     <>
       <header className={'nav' + (scrolled ? ' solid' : '')}>
         <div className="wrap nav-in">
-          <a href="#home" className="brand"><Activity size={22} /> DOC MATRIX</a>
+          <a href="#home" className="brand">
+            <img src="/favicon.svg" alt="DOC MATRIX Icon" className="brand-icon" />
+            DOC MATRIX
+          </a>
           <nav className={open ? 'links open' : 'links'}>
             {nav.map(([l, id]) => <a key={id} href={'#' + id} onClick={go}>{l}</a>)}
             <a href="#contact" className="btn sm" onClick={go}>Contact Us</a>
@@ -228,7 +231,10 @@ export default function App() {
       <footer className="foot">
         <div className="wrap foot-in">
           <div>
-            <a href="#home" className="brand"><Activity size={22} /> DOC MATRIX</a>
+            <a href="#home" className="brand">
+              <img src="/favicon.svg" alt="DOC MATRIX Icon" className="brand-icon" />
+              DOC MATRIX
+            </a>
             <p>Connecting Every Layer of Healthcare.</p>
           </div>
           <nav>
