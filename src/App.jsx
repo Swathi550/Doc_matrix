@@ -135,7 +135,7 @@ export default function App() {
             <p>The result is fewer handoffs, fewer repeated entries and a clearer view of care from the first appointment to the follow-up.</p>
           </div>
           <ul className="pillars rv">
-            {[[UserRound, 'Patient'], [Stethoscope, 'Doctor'], [Building2, 'Management'], [FlaskConical, 'Diagnostics'], [Pill, 'Pharmacy'], [MessagesSquare, 'Omnichannel']].map(([I, t]) => <li key={t}><I size={22} />{t}</li>)}
+            {[[UserRound, 'Patient'], [Stethoscope, 'Doctor'], [Building2, 'Management'], [FlaskConical, 'Diagnostics'], [Pill, 'Pharmacy'], [MessagesSquare, 'Omnichannel']].map(([I, t]) => <li key={t}><I size={22} /><span>{t}</span></li>)}
           </ul>
         </div>
       </section>

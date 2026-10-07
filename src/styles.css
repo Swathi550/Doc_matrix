@@ -58,8 +58,8 @@ h3{font-size:19px;font-weight:700;margin-bottom:6px}
 .split{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
 .split p{color:var(--mute);margin-top:14px;max-width:34em}
 .pillars{list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
-.pillars li{background:#fff;padding:26px 22px;display:flex;align-items:center;gap:14px;font-family:Manrope;font-weight:700;color:var(--navy);transition:background .25s,color .25s}
-.pillars li svg{color:var(--teal)}
+.pillars li{background:#fff;padding:24px 20px;display:flex;align-items:center;gap:12px;font-family:Manrope;font-weight:700;color:var(--navy);transition:background .25s,color .25s;min-width:0}
+.pillars li svg{color:var(--teal);flex-shrink:0}
 .pillars li:hover{background:var(--navy);color:#fff}
 .grid{display:grid;gap:20px}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g5{grid-template-columns:repeat(5,1fr);margin-top:36px}
 .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:28px;transition:transform .3s,box-shadow .3s,border-color .3s}
@@ -118,13 +118,25 @@ h3{font-size:19px;font-weight:700;margin-bottom:6px}
   .net.mini{max-width:420px}
 }
 @media(max-width:760px){
+  .wrap{padding:0 18px}
   .burger{display:block}
   .links{position:absolute;top:68px;left:0;right:0;flex-direction:column;align-items:stretch;gap:0;background:var(--navy);padding:8px 24px 20px;display:none}
   .links.open{display:flex}.links a{padding:12px 0}.links .btn{justify-content:center;margin-top:8px}
   .sec{padding:68px 0}.hero{padding-top:104px}
+  h1{font-size:clamp(36px,8.5vw,56px)}
+  .pillars li{padding:16px 12px;gap:8px;font-size:14px;letter-spacing:-0.01em}
+  .pillars li svg{width:18px;height:18px;flex-shrink:0}
+  .feat{padding:16px 14px;font-size:14.5px;gap:10px}
+  .card{padding:22px 18px}
   .g3,.g4,.why{grid-template-columns:1fr}.g5{grid-template-columns:1fr 1fr}
   .flow-steps{grid-template-columns:repeat(2,1fr)}
   .flow-steps li::after{display:none!important}
   .who{min-height:0}
+}
+@media(max-width:380px){
+  .wrap{padding:0 14px}
+  .pillars li{padding:14px 8px;gap:6px;font-size:13px}
+  .pillars li svg{width:16px;height:16px}
+  .feat{padding:14px 10px;font-size:13.5px}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}.rv{opacity:1;transform:none}}
