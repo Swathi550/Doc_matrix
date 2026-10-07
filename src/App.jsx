@@ -101,7 +101,7 @@ export default function App() {
       <header className={'nav' + (scrolled ? ' solid' : '')}>
         <div className="wrap nav-in">
           <a href="#home" className="brand">
-            <img src="/favicon.svg?v=lightgreen" alt="DOC MATRIX Icon" className="brand-icon" />
+            <img src="/favicon-green.svg" alt="DOC MATRIX Icon" className="brand-icon" />
             DOC MATRIX
           </a>
           <nav className={open ? 'links open' : 'links'}>
@@ -232,7 +232,7 @@ export default function App() {
         <div className="wrap foot-in">
           <div>
             <a href="#home" className="brand">
-              <img src="/favicon.svg?v=lightgreen" alt="DOC MATRIX Icon" className="brand-icon" />
+              <img src="/favicon-green.svg" alt="DOC MATRIX Icon" className="brand-icon" />
               DOC MATRIX
             </a>
             <p>Connecting Every Layer of Healthcare.</p>
