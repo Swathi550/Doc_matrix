@@ -9,12 +9,12 @@ import {
 const nav = [['Solutions', 'solutions'], ['Workflow', 'workflow'], ['Features', 'features'], ['Ecosystem', 'ecosystem'], ['Packages', 'packages'], ['About', 'about']]
 
 const solutions = [
-  [UserRound, 'Patient Management', 'One continuous record for every patient, from first registration to long-term follow-up.', '#10B981'],
-  [Stethoscope, 'Doctor Management', 'Schedules, consultations and prescriptions organised around each doctor\u2019s day.', '#059669'],
-  [Building2, 'Hospital Management', 'Departments, queues, billing and staff access managed from a single operations view.', '#0D9488'],
-  [FlaskConical, 'Diagnostics & Laboratory', 'Orders, sample tracking and reports flow straight back to the treating doctor.', '#14B8A6'],
-  [Pill, 'Pharmacy', 'Digital prescriptions reach the pharmacy directly, with dispensing and stock in step.', '#34D399'],
-  [MessagesSquare, 'Omnichannel Communication', 'Reminders and updates reach patients on the channel they actually use.', '#16A34A']
+  [UserRound, 'Patient Management', 'One continuous record for every patient, from first registration to long-term follow-up.', '#1D6FE8'],
+  [Stethoscope, 'Doctor Management', 'Schedules, consultations and prescriptions organised around each doctor\u2019s day.', '#0FA3A3'],
+  [Building2, 'Hospital Management', 'Departments, queues, billing and staff access managed from a single operations view.', '#0A1F3C'],
+  [FlaskConical, 'Diagnostics & Laboratory', 'Orders, sample tracking and reports flow straight back to the treating doctor.', '#2E9E6B'],
+  [Pill, 'Pharmacy', 'Digital prescriptions reach the pharmacy directly, with dispensing and stock in step.', '#1D6FE8'],
+  [MessagesSquare, 'Omnichannel Communication', 'Reminders and updates reach patients on the channel they actually use.', '#0FA3A3']
 ]
 
 const steps = [
@@ -54,7 +54,7 @@ function Network_({ mini }) {
   return (
     <svg className={'net' + (mini ? ' mini' : '')} viewBox="0 0 600 600" role="img" aria-label="Doc Matrix connected to patient, doctor, management, lab, pharmacy and omnichannel">
       <defs>
-        <radialGradient id={'g' + (mini ? 'a' : 'b')}><stop offset="0" stopColor="#34D399" stopOpacity=".28" /><stop offset="1" stopColor="#34D399" stopOpacity="0" /></radialGradient>
+        <radialGradient id={'g' + (mini ? 'a' : 'b')}><stop offset="0" stopColor="#14B8A6" stopOpacity=".35" /><stop offset="1" stopColor="#14B8A6" stopOpacity="0" /></radialGradient>
       </defs>
       <circle cx="300" cy="300" r="290" fill={`url(#g${mini ? 'a' : 'b'})`} />
       <circle className="orbit" cx="300" cy="300" r="210" />
@@ -66,11 +66,11 @@ function Network_({ mini }) {
       {pts.map(([n, x, y], i) => (
         <g key={n}>
           <line className="flow" x1="300" y1="300" x2={x} y2={y} />
-          <circle r="4" fill="#059669">
+          <circle r="4" fill="#7FE0B0">
             <animateMotion dur={`${3 + (i % 3) * 0.6}s`} begin={`${i * 0.5}s`} repeatCount="indefinite" path={`M300,300 L${x},${y}`} />
           </circle>
           <circle className="node" cx={x} cy={y} r="34" style={{ animationDelay: `${i * 0.4}s` }} />
-          <circle cx={x} cy={y} r="8" fill={i % 2 ? '#10B981' : '#059669'} />
+          <circle cx={x} cy={y} r="8" fill={i % 2 ? '#14B8A6' : '#4C9AFF'} />
           <text x={x} y={y + (y > 300 ? 62 : -48)} textAnchor="middle" className="nl">{n}</text>
         </g>
       ))}
@@ -101,7 +101,7 @@ export default function App() {
       <header className={'nav' + (scrolled ? ' solid' : '')}>
         <div className="wrap nav-in">
           <a href="#home" className="brand">
-            <img src="/favicon-green.svg" alt="DOC MATRIX Icon" className="brand-icon" />
+            <img src="/favicon.svg" alt="DOC MATRIX Icon" className="brand-icon" />
             DOC MATRIX
           </a>
           <nav className={open ? 'links open' : 'links'}>
@@ -232,7 +232,7 @@ export default function App() {
         <div className="wrap foot-in">
           <div>
             <a href="#home" className="brand">
-              <img src="/favicon-green.svg" alt="DOC MATRIX Icon" className="brand-icon" />
+              <img src="/favicon.svg" alt="DOC MATRIX Icon" className="brand-icon" />
               DOC MATRIX
             </a>
             <p>Connecting Every Layer of Healthcare.</p>
