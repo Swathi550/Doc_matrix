@@ -3,8 +3,9 @@ import {
   Menu, X, ArrowRight, Check, UserRound, Stethoscope, Building2, FlaskConical, Pill,
   MessagesSquare, CalendarCheck, UserPlus, LogIn, ClipboardCheck, ListOrdered, FileText, CreditCard,
   Repeat, Bell, BarChart3, ShieldCheck, LayoutDashboard, Plug, FolderHeart, HeartPulse, Layers,
-  Eye, Gauge, Network, Share2, Radio, Microscope, CalendarClock
+  Eye, Gauge, Network, Share2, Radio, Microscope, CalendarClock, Sparkles
 } from 'lucide-react'
+import NodeModal from './components/NodeModal'
 
 const nav = [['Solutions', 'solutions'], ['Workflow', 'workflow'], ['Features', 'features'], ['Ecosystem', 'ecosystem'], ['Packages', 'packages'], ['About', 'about']]
 
@@ -46,44 +47,121 @@ const why = [
 
 const nodes = ['Patient', 'Doctor', 'Management', 'Lab', 'Pharmacy', 'Omnichannel']
 
-function Network_({ mini }) {
+function Network_({ mini, onSelectNode }) {
   const pts = nodes.map((n, i) => {
     const a = (-90 + 60 * i) * Math.PI / 180
     return [n, 300 + 210 * Math.cos(a), 300 + 210 * Math.sin(a)]
   })
+
   return (
-    <svg className={'net' + (mini ? ' mini' : '')} viewBox="0 0 600 600" role="img" aria-label="Doc Matrix connected to patient, doctor, management, lab, pharmacy and omnichannel">
-      <defs>
-        <radialGradient id={'g' + (mini ? 'a' : 'b')}><stop offset="0" stopColor="#14B8A6" stopOpacity=".35" /><stop offset="1" stopColor="#14B8A6" stopOpacity="0" /></radialGradient>
-      </defs>
-      <circle cx="300" cy="300" r="290" fill={`url(#g${mini ? 'a' : 'b'})`} />
-      <circle className="orbit" cx="300" cy="300" r="210" />
-      <circle className="orbit o2" cx="300" cy="300" r="120" />
-      {pts.map(([n, x, y], i) => {
-        const [, nx, ny] = pts[(i + 1) % 6]
-        return <line key={'r' + n} className="ring" x1={x} y1={y} x2={nx} y2={ny} />
-      })}
-      {pts.map(([n, x, y], i) => (
-        <g key={n}>
-          <line className="flow" x1="300" y1="300" x2={x} y2={y} />
-          <circle r="4" fill="#7FE0B0">
-            <animateMotion dur={`${3 + (i % 3) * 0.6}s`} begin={`${i * 0.5}s`} repeatCount="indefinite" path={`M300,300 L${x},${y}`} />
-          </circle>
-          <circle className="node" cx={x} cy={y} r="34" style={{ animationDelay: `${i * 0.4}s` }} />
-          <circle cx={x} cy={y} r="8" fill={i % 2 ? '#14B8A6' : '#4C9AFF'} />
-          <text x={x} y={y + (y > 300 ? 62 : -48)} textAnchor="middle" className="nl">{n}</text>
+    <div className="net-wrapper">
+      <svg
+        className={'net' + (mini ? ' mini' : '')}
+        viewBox="0 0 600 600"
+        role="img"
+        aria-label="Doc Matrix connected to patient, doctor, management, lab, pharmacy and omnichannel"
+      >
+        <defs>
+          <radialGradient id={'g' + (mini ? 'a' : 'b')}>
+            <stop offset="0" stopColor="#14B8A6" stopOpacity=".35" />
+            <stop offset="1" stopColor="#14B8A6" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <circle cx="300" cy="300" r="290" fill={`url(#g${mini ? 'a' : 'b'})`} />
+        <circle className="orbit" cx="300" cy="300" r="210" />
+        <circle className="orbit o2" cx="300" cy="300" r="120" />
+        {pts.map(([n, x, y], i) => {
+          const [, nx, ny] = pts[(i + 1) % 6]
+          return <line key={'r' + n} className="ring" x1={x} y1={y} x2={nx} y2={ny} />
+        })}
+        {pts.map(([n, x, y], i) => (
+          <g key={'flow-' + n}>
+            <line className="flow" x1="300" y1="300" x2={x} y2={y} />
+            <circle r="4" fill="#7FE0B0">
+              <animateMotion
+                dur={`${3 + (i % 3) * 0.6}s`}
+                begin={`${i * 0.5}s`}
+                repeatCount="indefinite"
+                path={`M300,300 L${x},${y}`}
+              />
+            </circle>
+          </g>
+        ))}
+        {pts.map(([n, x, y], i) => (
+          <g
+            key={n}
+            className="net-node-item"
+            role="button"
+            tabIndex={0}
+            aria-label={`Explore ${n} module details`}
+            onClick={() => onSelectNode && onSelectNode(n)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onSelectNode && onSelectNode(n)
+              }
+            }}
+          >
+            {/* Expanded click target */}
+            <circle cx={x} cy={y} r="46" fill="transparent" className="hit-area" />
+            {/* Outer hover halo */}
+            <circle className="node-glow" cx={x} cy={y} r="42" />
+            {/* Satellite node circle */}
+            <circle className="node" cx={x} cy={y} r="34" style={{ animationDelay: `${i * 0.4}s` }} />
+            {/* Center accent */}
+            <circle cx={x} cy={y} r="8" fill={i % 2 ? '#14B8A6' : '#4C9AFF'} />
+            {/* Label */}
+            <text x={x} y={y + (y > 300 ? 58 : -46)} textAnchor="middle" className="nl">
+              {n}
+            </text>
+            {/* Hover sub-label hint */}
+            <text x={x} y={y + (y > 300 ? 73 : -30)} textAnchor="middle" className="nl-sub">
+              Click to view
+            </text>
+          </g>
+        ))}
+        {/* Core Center DOC MATRIX Hub */}
+        <g
+          className="net-core-item"
+          role="button"
+          tabIndex={0}
+          aria-label="Doc Matrix Central Core - Click to explore ecosystem modules"
+          onClick={() => onSelectNode && onSelectNode('Patient')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              onSelectNode && onSelectNode('Patient')
+            }
+          }}
+        >
+          <circle cx="300" cy="300" r="70" fill="transparent" className="hit-area" />
+          <circle className="core" cx="300" cy="300" r="62" />
+          <text x="300" y="296" textAnchor="middle" className="ct">
+            DOC
+          </text>
+          <text x="300" y="322" textAnchor="middle" className="ct">
+            MATRIX
+          </text>
         </g>
-      ))}
-      <circle className="core" cx="300" cy="300" r="62" />
-      <text x="300" y="296" textAnchor="middle" className="ct">DOC</text>
-      <text x="300" y="322" textAnchor="middle" className="ct">MATRIX</text>
-    </svg>
+      </svg>
+      <div
+        className="net-guide-badge"
+        onClick={() => onSelectNode && onSelectNode('Patient')}
+        role="button"
+        tabIndex={0}
+      >
+        <span className="net-guide-ping" />
+        <Sparkles size={14} className="net-guide-icon" />
+        <span>Click any circle to explore details</span>
+      </div>
+    </div>
   )
 }
 
 export default function App() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [activeModalNode, setActiveModalNode] = useState(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -123,7 +201,7 @@ export default function App() {
               <a href="#contact" className="btn ghost">Contact Us</a>
             </div>
           </div>
-          <Network_ mini />
+          <Network_ mini onSelectNode={setActiveModalNode} />
         </div>
       </section>
 
@@ -135,7 +213,17 @@ export default function App() {
             <p>The result is fewer handoffs, fewer repeated entries and a clearer view of care from the first appointment to the follow-up.</p>
           </div>
           <ul className="pillars rv">
-            {[[UserRound, 'Patient'], [Stethoscope, 'Doctor'], [Building2, 'Management'], [FlaskConical, 'Diagnostics'], [Pill, 'Pharmacy'], [MessagesSquare, 'Omnichannel']].map(([I, t]) => <li key={t}><I size={22} />{t}</li>)}
+            {[[UserRound, 'Patient'], [Stethoscope, 'Doctor'], [Building2, 'Management'], [FlaskConical, 'Diagnostics'], [Pill, 'Pharmacy'], [MessagesSquare, 'Omnichannel']].map(([I, t], idx) => (
+              <li
+                key={t}
+                onClick={() => setActiveModalNode(nodes[idx])}
+                style={{ cursor: 'pointer' }}
+                title={`Explore ${t} module`}
+              >
+                <I size={22} />
+                <span>{t}</span>
+              </li>
+            ))}
           </ul>
         </div>
       </section>
@@ -146,9 +234,27 @@ export default function App() {
           <p className="sub rv">Six modules that work on their own and work better together.</p>
           <div className="grid g3">
             {solutions.map(([I, t, d, c], i) => (
-              <article key={t} className="card sol rv" style={{ '--c': c, transitionDelay: `${(i % 3) * 80}ms` }}>
+              <article
+                key={t}
+                className="card sol rv"
+                style={{ '--c': c, transitionDelay: `${(i % 3) * 80}ms` }}
+                onClick={() => setActiveModalNode(nodes[i])}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setActiveModalNode(nodes[i])
+                  }
+                }}
+              >
                 <span className="ic"><I size={24} /></span>
-                <h3>{t}</h3><p>{d}</p>
+                <h3>{t}</h3>
+                <p>{d}</p>
+                <div className="sol-more">
+                  <span>Explore Module</span>
+                  <ArrowRight size={15} />
+                </div>
               </article>
             ))}
           </div>
@@ -187,7 +293,7 @@ export default function App() {
             <h2>A connected ecosystem</h2>
             <p>At the center, Doc Matrix links patients, doctors, management, labs, pharmacies and communication channels. Information moves between them as it happens, so every team sees the same up-to-date picture.</p>
           </div>
-          <div className="rv"><Network_ /></div>
+          <div className="rv"><Network_ onSelectNode={setActiveModalNode} /></div>
         </div>
       </section>
 
@@ -243,6 +349,13 @@ export default function App() {
         </div>
         <div className="wrap copy">&copy; {new Date().getFullYear()} DOC MATRIX. All rights reserved.</div>
       </footer>
+
+      {/* Interactive Modal Popup Box with Tabs */}
+      <NodeModal
+        activeNode={activeModalNode}
+        onClose={() => setActiveModalNode(null)}
+        onSelectNode={setActiveModalNode}
+      />
     </>
   )
 }
