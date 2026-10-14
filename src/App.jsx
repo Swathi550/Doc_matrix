@@ -118,22 +118,26 @@ const why = [
 
 const nodes = ['Patient', 'Doctor', 'Management', 'Lab', 'Pharmacy', 'Omnichannel']
 
-function MedicalCrossMark({ light = false }) {
-  return (
-    <span className={`medical-cross-mark ${light ? 'mark-light' : ''}`} aria-hidden="true">
-      <i />
-      <i />
-      <i />
-      <i />
-    </span>
-  )
-}
-
 function Brand({ light = false }) {
   return (
-    <a className="brand-anchor" href="#top" aria-label="DOC MATRIX Home">
-      <MedicalCrossMark light={light} />
-      <span className="brand-title">DOC MATRIX</span>
+    <a className={`brand-anchor ${light ? 'brand-light' : ''}`} href="#top" aria-label="DOC MATRIX Home">
+      <span className="brand-icon-wrapper">
+        <img
+          src="/logo.svg"
+          alt=""
+          width="40"
+          height="40"
+          className="brand-logo-img"
+        />
+      </span>
+      <span className="brand-wordmark-wrapper">
+        <img
+          src={light ? "/name-light.svg" : "/name.svg"}
+          alt="DOC MATRIX"
+          height="28"
+          className="brand-name-img"
+        />
+      </span>
     </a>
   )
 }
@@ -246,9 +250,15 @@ function EcosystemHub() {
           </g>
         ))}
 
-        <circle cx="280" cy="280" r="54" className="hub-core-circle" />
-        <text x="280" y="275" textAnchor="middle" className="hub-core-brand">DOC</text>
-        <text x="280" y="297" textAnchor="middle" className="hub-core-sub">MATRIX</text>
+        <circle cx="280" cy="280" r="56" className="hub-core-circle" />
+        <image
+          href="/logo.svg"
+          x="248"
+          y="248"
+          width="64"
+          height="64"
+          className="hub-core-logo"
+        />
       </svg>
     </div>
   )
@@ -500,7 +510,10 @@ export default function App() {
 
         {/* Hero Editorial Copy */}
         <div className="hero-copy">
-          <p className="eyebrow">CLINIC MANAGEMENT PLATFORM</p>
+          <div className="eyebrow-badge">
+            <img src="/logo.svg" alt="" width="18" height="18" className="eyebrow-logo" />
+            <span>CLINIC MANAGEMENT PLATFORM</span>
+          </div>
           <h1>
             <AnimatedGradientText
               speed={2}
@@ -666,7 +679,10 @@ export default function App() {
 
         <div className="wrap relative-content">
           <div className="section-head rv">
-            <span className="section-kicker kicker-badge">BUILT FOR MODERN CLINICS</span>
+            <span className="section-kicker kicker-badge">
+              <img src="/logo.svg" alt="" width="16" height="16" className="kicker-inline-logo" />
+              BUILT FOR MODERN CLINICS
+            </span>
             <h2 className="section-title">
               Healthcare technology, designed to{' '}
               <span className="text-gradient-highlight">fade into the background</span>.
@@ -889,12 +905,17 @@ export default function App() {
       {/* Section 9: Why Doc Matrix (6 Pillars) */}
       <section id="why" className="section-padded bg-white">
         <div className="wrap">
-          <div className="section-head rv">
-            <span className="section-kicker">WHY DOC MATRIX</span>
-            <h2 className="section-title">Why leading clinics choose DocMatrix.</h2>
-            <p className="section-lead">
-              The difference is in the connection — no gaps, no dropped handoffs, no lost history.
-            </p>
+          <div className="why-header-layout rv">
+            <div className="section-head">
+              <span className="section-kicker">WHY DOC MATRIX</span>
+              <h2 className="section-title">Why leading clinics choose DocMatrix.</h2>
+              <p className="section-lead">
+                The difference is in the connection — no gaps, no dropped handoffs, no lost history.
+              </p>
+            </div>
+            <div className="why-brand-seal" aria-hidden="true">
+              <img src="/logo-and-name.svg" alt="DOC MATRIX" className="why-brand-seal-img" />
+            </div>
           </div>
 
           <div className="why-pillars-grid">
@@ -915,6 +936,9 @@ export default function App() {
       <section id="contact" className="section-padded bg-dark">
         <div className="wrap contact-layout">
           <div className="contact-text-col rv">
+            <div className="contact-brand-lockup">
+              <img src="/logo-and-name-light.svg" alt="DOC MATRIX" className="contact-brand-img" />
+            </div>
             <span className="section-kicker light">READY TO CONNECT?</span>
             <h2 className="contact-headline">Schedule a personalized platform walkthrough.</h2>
             <p className="contact-lead">
