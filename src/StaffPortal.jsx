@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { FEATURE_REGISTRY } from '@/features/registry'
 import {
   Calendar, Users, Stethoscope, Receipt, BookOpen, Package, MessageSquare, Globe,
   BarChart3, Settings, LayoutDashboard, LogOut, User, Menu, X, ChevronRight, ChevronDown,
@@ -32,83 +33,8 @@ const DEMO_STAFF_ROLES = [
   { id: 'usr-108', role: 'ACCOUNTANT', name: 'Manoj Pillai (Accounts)', phone: '+910000000108' }
 ]
 
-// All 55 Launch Features exactly from the DocMatrix Feature Plan
-const ALL_LAUNCH_FEATURES = [
-  // Appointments
-  { id: 'appt.queue', area: 'Appointments', name: 'Live queue', route: '/appointments/queue', desc: 'Live queue: Scheduled, Arrived, Waiting, In Consultation, Completed, with waiting-room timer', source: 'Part 1' },
-  { id: 'appt.new', area: 'Appointments', name: 'Book appointment', route: '/appointments/new', desc: 'Book appointment and walk-ins on real clinic hours and doctor availability', source: 'Part 1' },
-  { id: 'appt.calendar', area: 'Appointments', name: 'Calendar views', route: '/appointments/calendar', desc: 'Day, week and doctor-wise views with filters', source: 'Part 1' },
-  { id: 'appt.detail', area: 'Appointments', name: 'Appointment details', route: '/appointments/:id', desc: 'Appointment details: reschedule and cancel with a reason, automatic no-show marking', source: 'Part 1', inNav: false },
-  { id: 'appt.enquiries', area: 'Appointments', name: 'Missed enquiries', route: '/appointments/missed-enquiries', desc: 'Missed enquiries (half-finished online bookings)', source: 'Part 1' },
-
-  // Patients
-  { id: 'pat.list', area: 'Patients', name: 'Patients list', route: '/patients/list', desc: 'Patients: permanent ID, search by name, phone or ID', source: 'Part 1' },
-  { id: 'pat.new', area: 'Patients', name: 'Register patient', route: '/patients/new', desc: 'Register patient', source: 'Part 1' },
-  { id: 'pat.profile', area: 'Patients', name: 'Patient profile', route: '/patients/:id', desc: 'Patient profile: medical and dental history, allergy warnings at the top, assigned doctor', source: 'Part 1', inNav: false },
-  { id: 'pat.timeline', area: 'Patients', name: 'Visit timeline', route: '/patients/:id/timeline', desc: 'Visit-by-visit timeline', source: 'Part 1', inNav: false },
-  { id: 'pat.documents', area: 'Patients', name: 'Documents & X-rays', route: '/patients/:id/documents', desc: 'Documents: X-rays, scans, photos, consent forms', source: 'Part 1', inNav: false },
-  { id: 'pat.consents', area: 'Patients', name: 'Consent records', route: '/patients/:id/consents', desc: 'Consent records', source: 'Part 1', inNav: false },
-  { id: 'pat.pending', area: 'Patients', name: 'Pending treatments', route: '/patients/:id/pending-treatments', desc: 'Pending treatments from earlier visits (#30)', source: '#30', inNav: false },
-  { id: 'pat.toothchart', area: 'Patients', name: 'Tooth chart', route: '/patients/:id/tooth-chart', desc: 'Tooth chart: tap a tooth, mark its condition, history for every visit (#1)', source: '#1', inNav: false },
-
-  // Clinical
-  { id: 'clin.prescriptions', area: 'Clinical', name: 'Digital prescriptions', route: '/clinical/prescriptions', desc: 'Digital prescriptions on the clinic letterhead', source: 'Part 1' },
-  { id: 'clin.masterlists', area: 'Clinical', name: 'Master lists', route: '/clinical/master-lists', desc: 'Master lists: complaints, findings, diagnoses, medicines, advice', source: 'Part 1' },
-  { id: 'clin.notes', area: 'Clinical', name: 'Clinical notes', route: '/clinical/notes', desc: 'Structured clinical notes', source: 'Part 1' },
-  { id: 'clin.orders', area: 'Clinical', name: 'Diagnostic orders', route: '/clinical/orders', desc: 'Pathology and X-ray orders', source: 'Part 1' },
-  { id: 'clin.plans', area: 'Clinical', name: 'Treatment plans', route: '/clinical/treatment-plans', desc: 'Treatment plans tracked to completion', source: 'Part 1' },
-  { id: 'clin.estimates', area: 'Clinical', name: 'Cost estimates', route: '/clinical/estimates', desc: 'Treatment cost estimate the patient approves (#2)', source: '#2' },
-
-  // Billing
-  { id: 'bill.invoices', area: 'Billing', name: 'Itemised invoices', route: '/billing/invoices', desc: 'Itemised PDF invoices, part payments, UPI QR on the bill', source: 'Part 1' },
-  { id: 'bill.invoice-new', area: 'Billing', name: 'New invoice', route: '/billing/invoices/new', desc: 'New invoice', source: 'Part 1', inNav: false },
-  { id: 'bill.dues', area: 'Billing', name: 'Pending dues', route: '/billing/dues', desc: 'Pending dues list', source: 'Part 1' },
-  { id: 'bill.collection', area: 'Billing', name: 'Daily collection', route: '/billing/collection', desc: 'Daily collection: cash, card, UPI', source: 'Part 1' },
-  { id: 'bill.price-list', area: 'Billing', name: 'Price list & GST', route: '/billing/price-list', desc: 'Service price list with offer prices; tag each service as treatment or cosmetic for GST (#18)', source: '#18' },
-  { id: 'bill.payments', area: 'Billing', name: 'Payment history', route: '/billing/payments', desc: 'Payment history', source: 'Part 1' },
-  { id: 'bill.expenses', area: 'Billing', name: 'Expenses', route: '/billing/expenses', desc: 'Expense tracking', source: 'Part 1' },
-
-  // Accounts (#5; roles ORGANIZATION_ADMIN, ACCOUNTANT)
-  { id: 'acc.ledgers', area: 'Accounts', name: 'Accounts (ledgers)', route: '/accounts/ledgers', desc: 'Accounts (ledgers)', source: '#5', roles: ['ORGANIZATION_ADMIN', 'ACCOUNTANT'] },
-  { id: 'acc.entries', area: 'Accounts', name: 'Entries (vouchers)', route: '/accounts/entries', desc: 'Entries (vouchers)', source: '#5', roles: ['ORGANIZATION_ADMIN', 'ACCOUNTANT'] },
-  { id: 'acc.day-book', area: 'Accounts', name: 'Day book', route: '/accounts/day-book', desc: 'Day book', source: '#5', roles: ['ORGANIZATION_ADMIN', 'ACCOUNTANT'] },
-  { id: 'acc.profit-loss', area: 'Accounts', name: 'Profit and loss', route: '/accounts/profit-loss', desc: 'Profit and loss', source: '#5', roles: ['ORGANIZATION_ADMIN', 'ACCOUNTANT'] },
-  { id: 'acc.trial-balance', area: 'Accounts', name: 'Trial balance', route: '/accounts/trial-balance', desc: 'Trial balance', source: '#5', roles: ['ORGANIZATION_ADMIN', 'ACCOUNTANT'] },
-  { id: 'acc.balance-sheet', area: 'Accounts', name: 'Balance sheet', route: '/accounts/balance-sheet', desc: 'Balance sheet', source: '#5', roles: ['ORGANIZATION_ADMIN', 'ACCOUNTANT'] },
-  { id: 'acc.gst', area: 'Accounts', name: 'GST report', route: '/accounts/gst-report', desc: 'GST report', source: '#5', roles: ['ORGANIZATION_ADMIN', 'ACCOUNTANT'] },
-  { id: 'acc.tally-export', area: 'Accounts', name: 'Export to Tally', route: '/accounts/export-tally', desc: 'Export to Tally', source: '#5', roles: ['ORGANIZATION_ADMIN', 'ACCOUNTANT'] },
-
-  // Inventory (#6, basic)
-  { id: 'inv.items', area: 'Inventory', name: 'Items and stock', route: '/inventory/items', desc: 'Items and stock', source: '#6' },
-  { id: 'inv.movements', area: 'Inventory', name: 'Stock in/out', route: '/inventory/movements', desc: 'Stock in and out', source: '#6' },
-  { id: 'inv.alerts', area: 'Inventory', name: 'Low-stock alerts', route: '/inventory/alerts', desc: 'Low-stock and expiry alerts', source: '#6' },
-
-  // WhatsApp
-  { id: 'wa.automation', area: 'WhatsApp', name: 'WhatsApp automation', route: '/whatsapp/automation', desc: 'Confirmation, 24-hour and 2-hour reminders, rescheduled and cancelled notices, welcome message, prescription and invoice PDFs', source: 'Part 1' },
-  { id: 'wa.log', area: 'WhatsApp', name: 'Message log', route: '/whatsapp/log', desc: 'Log of every message', source: 'Part 1' },
-  { id: 'wa.recalls', area: 'WhatsApp', name: 'Recall reminders', route: '/whatsapp/recalls', desc: 'Recall reminders, for example "your 6-month cleaning is due" (#10)', source: '#10' },
-
-  // Website (staff side)
-  { id: 'web.settings', area: 'Website', name: 'Clinic website settings', route: '/website/settings', desc: 'Clinic website: online booking on real slots, gallery with before-and-after sliders, reviews, enquiry form', source: 'Part 1' },
-  { id: 'web.approvals', area: 'Website', name: 'Booking approvals', route: '/website/approvals', desc: 'Approval inbox for online bookings (WhatsApp code verified)', source: 'Part 1' },
-
-  // Reports
-  { id: 'rep.revenue', area: 'Reports', name: 'Revenue', route: '/reports/revenue', desc: 'Revenue', source: 'Part 1' },
-  { id: 'rep.doctors', area: 'Reports', name: 'Doctor performance', route: '/reports/doctors', desc: 'Doctor-wise performance', source: 'Part 1' },
-  { id: 'rep.treatments', area: 'Reports', name: 'Treatment breakdown', route: '/reports/treatments', desc: 'Treatment breakdown', source: 'Part 1' },
-  { id: 'rep.dues-ageing', area: 'Reports', name: 'Dues ageing', route: '/reports/dues-ageing', desc: 'Pending dues by age', source: 'Part 1' },
-  { id: 'rep.income-expense', area: 'Reports', name: 'Income vs expense', route: '/reports/income-expense', desc: 'Income vs expense', source: 'Part 1' },
-  { id: 'rep.conversion', area: 'Reports', name: 'Booking conversion', route: '/reports/booking-conversion', desc: 'Booking conversion', source: 'Part 1' },
-
-  // Settings
-  { id: 'set.clinic', area: 'Settings', name: 'Clinic profile', route: '/settings/clinic', desc: 'Clinic profile, letterhead, working hours, chairs, branches', source: 'Part 1', roles: ['ORGANIZATION_ADMIN', 'BRANCH_ADMIN'] },
-  { id: 'set.staff', area: 'Settings', name: 'Staff management', route: '/settings/staff', desc: 'Staff: unlimited logins, person-by-person permissions, instant deactivation, staff profiles', source: 'Part 1', roles: ['ORGANIZATION_ADMIN', 'BRANCH_ADMIN'] },
-  { id: 'set.audit', area: 'Settings', name: 'Audit log', route: '/settings/audit-log', desc: 'Audit log: every edit, deletion, prescription change, discount and cancellation', source: 'Part 1', roles: ['ORGANIZATION_ADMIN'] },
-  { id: 'set.privacy', area: 'Settings', name: 'Privacy & consent', route: '/settings/privacy', desc: 'Consent screens and data-protection controls, patient data export on request (#25)', source: '#25', roles: ['ORGANIZATION_ADMIN', 'BRANCH_ADMIN'] },
-  { id: 'set.data', area: 'Settings', name: 'Data export/import', route: '/settings/data', desc: 'Data export and import (#24)', source: '#24', roles: ['ORGANIZATION_ADMIN', 'BRANCH_ADMIN'] },
-  { id: 'set.activity', area: 'Settings', name: 'Activity log', route: '/settings/activity-log', desc: 'Activity log: who changed what, and when (#26)', source: '#26', roles: ['ORGANIZATION_ADMIN', 'BRANCH_ADMIN'] },
-  { id: 'set.plan', area: 'Settings', name: 'Subscription plan', route: '/settings/plan', desc: 'Subscription and plan', source: 'Part 1', roles: ['ORGANIZATION_ADMIN', 'BRANCH_ADMIN'] }
-]
+// All 55 Launch Features directly from single-source-of-truth registry
+const ALL_LAUNCH_FEATURES = FEATURE_REGISTRY.filter((f) => f.phase === 'launch')
 
 const AREA_ICONS = {
   Appointments: Calendar,
@@ -172,11 +98,10 @@ export default function StaffPortal({
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // Group features by area
+  // Group all launch features by area (Problem P5: list ALL 10 areas with their pages)
   const groupedAreas = useMemo(() => {
     const map = {}
     ALL_LAUNCH_FEATURES.forEach((f) => {
-      if (f.inNav === false) return
       if (!map[f.area]) map[f.area] = []
       map[f.area].push(f)
     })
@@ -504,6 +429,7 @@ export default function StaffPortal({
                       return (
                         <button
                           key={feat.id}
+                          data-testid={`sidebar-link-${feat.id}`}
                           onClick={() => navigateTo(feat.route.includes(':id') ? feat.route.replace(':id', feat.area === 'Patients' ? 'pt-1001' : 'apt-101') : feat.route)}
                           style={{
                             width: '100%',

@@ -13,7 +13,7 @@ import AppRoutes from './routes/appRoutes'
 import DemoBanner from './components/DemoBanner'
 import { findDemoUserById, DEMO_USERS } from './mocks/auth'
 
-function getSafeNextPath(rawNext) {
+export function getSafeNextPath(rawNext) {
   if (!rawNext) return '/dashboard'
   try {
     const decoded = decodeURIComponent(rawNext)
