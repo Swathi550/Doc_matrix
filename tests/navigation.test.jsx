@@ -23,7 +23,7 @@ describe('DocMatrix Navigation & Architecture Validation', () => {
       </MemoryRouter>
     )
 
-    expect(screen.queryByTestId('demo-banner')).toBeNull()
+    expect(screen.getByTestId('demo-banner')).toBeInTheDocument()
     unmount()
 
     const { unmount: unmountAppointments } = render(

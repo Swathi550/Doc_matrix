@@ -1,10 +1,13 @@
 import React, { Suspense, lazy } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { FEATURE_REGISTRY } from '@/features/registry'
 import { LAUNCH_PAGE_MAP } from '@/features/pageMap'
 import AreaPage from '@/pages/areas/AreaPage'
 import NotBuiltYetPage from '@/pages/common/NotBuiltYetPage'
 import NotFoundPage from '@/pages/error/NotFoundPage'
+import ForbiddenPage from '@/pages/error/ForbiddenPage'
+import TermsPage from '@/pages/legal/TermsPage'
+import PrivacyPage from '@/pages/legal/PrivacyPage'
 import ComingSoonPage from '@/pages/roadmap/ComingSoonPage'
 import StaffPortal from '@/StaffPortal'
 
@@ -22,49 +25,114 @@ const PageFallback = () => (
   </div>
 )
 
+// Protected Route Guard (Problem P2 & Decision D4)
+function ProtectedRoute({ currentUser, allowedRoles, children }) {
+  const location = useLocation()
+
+  if (!currentUser) {
+    const next = encodeURIComponent(location.pathname + location.search)
+    return <Navigate to={`/login?next=${next}`} replace />
+  }
+
+  if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
+    return <Navigate to="/forbidden" replace />
+  }
+
+  return children
+}
+
 export function AppRoutes({
   currentUser,
   onLoginSuccess,
   onLogout,
   renderLandingPage
 }) {
-  const showRoadmap = import.meta.env.VITE_SHOW_ROADMAP === 'true'
-
   return (
     <Routes>
-      {/* 1. Main Landing Page */}
+      {/* 1. Public Landing Page */}
       <Route path="/" element={renderLandingPage()} />
 
-      {/* 2. Authentication & Solutions Views */}
-      <Route path="/login" element={renderLandingPage('login')} />
-      <Route path="/signup" element={renderLandingPage('signup')} />
+      {/* 2. Public Authentication Views (Logged-in users redirect to /dashboard) */}
+      <Route
+        path="/login"
+        element={currentUser ? <Navigate to="/dashboard" replace /> : renderLandingPage('login')}
+      />
+      <Route
+        path="/signup"
+        element={currentUser ? <Navigate to="/dashboard" replace /> : renderLandingPage('signup')}
+      />
       <Route path="/solutions/:id" element={renderLandingPage('solution')} />
 
-      {/* 3. Dashboard Route */}
+      {/* 3. Public Legal & Error Pages */}
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/forbidden" element={<ForbiddenPage />} />
+
+      {/* 4. Protected Clinic Dashboard */}
       <Route
         path="/dashboard"
         element={
-          <StaffPortal
-            user={currentUser || { id: 'usr-104', name: 'Dr. Arun Kumar', role: 'DOCTOR', clinicName: 'Demo Dental Clinic' }}
-            onLogout={onLogout}
-          />
+          <ProtectedRoute currentUser={currentUser}>
+            <StaffPortal user={currentUser} onLogout={onLogout} />
+          </ProtectedRoute>
         }
       />
 
-      {/* 4. Area Hub Pages */}
-      <Route path="/appointments" element={<AreaPage areaKey="appointments" />} />
-      <Route path="/patients" element={<AreaPage areaKey="patients" />} />
-      <Route path="/clinical" element={<AreaPage areaKey="clinical" />} />
-      <Route path="/billing" element={<AreaPage areaKey="billing" />} />
-      <Route path="/accounts" element={<AreaPage areaKey="accounts" />} />
-      <Route path="/inventory" element={<AreaPage areaKey="inventory" />} />
-      <Route path="/whatsapp" element={<AreaPage areaKey="whatsapp" />} />
-      <Route path="/website" element={<AreaPage areaKey="website" />} />
-      <Route path="/reports" element={<AreaPage areaKey="reports" />} />
-      <Route path="/settings" element={<AreaPage areaKey="settings" />} />
-      <Route path="/roadmap" element={<AreaPage areaKey="roadmap" />} />
+      {/* 5. Protected Area Hub Pages (Decision D4: Accounts and Settings role-limited) */}
+      <Route
+        path="/appointments"
+        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="appointments" /></ProtectedRoute>}
+      />
+      <Route
+        path="/patients"
+        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="patients" /></ProtectedRoute>}
+      />
+      <Route
+        path="/clinical"
+        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="clinical" /></ProtectedRoute>}
+      />
+      <Route
+        path="/billing"
+        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="billing" /></ProtectedRoute>}
+      />
+      <Route
+        path="/accounts"
+        element={
+          <ProtectedRoute currentUser={currentUser} allowedRoles={['ORGANIZATION_ADMIN', 'ACCOUNTANT']}>
+            <AreaPage areaKey="accounts" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/inventory"
+        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="inventory" /></ProtectedRoute>}
+      />
+      <Route
+        path="/whatsapp"
+        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="whatsapp" /></ProtectedRoute>}
+      />
+      <Route
+        path="/website"
+        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="website" /></ProtectedRoute>}
+      />
+      <Route
+        path="/reports"
+        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="reports" /></ProtectedRoute>}
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute currentUser={currentUser} allowedRoles={['ORGANIZATION_ADMIN', 'BRANCH_ADMIN']}>
+            <AreaPage areaKey="settings" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/roadmap"
+        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="roadmap" /></ProtectedRoute>}
+      />
 
-      {/* 5. All 55 Launch Feature Sub-Pages (Lazy-Loaded) */}
+      {/* 6. Protected 55 Launch Feature Sub-Pages */}
       {FEATURE_REGISTRY.filter((f) => f.phase === 'launch').map((feature) => {
         const Component = lazyComponents[feature.id]
         if (!Component) return null
@@ -74,28 +142,32 @@ export function AppRoutes({
             key={feature.id}
             path={feature.route}
             element={
-              <Suspense fallback={<PageFallback />}>
-                <Component />
-              </Suspense>
+              <ProtectedRoute currentUser={currentUser} allowedRoles={feature.roles}>
+                <Suspense fallback={<PageFallback />}>
+                  <Component />
+                </Suspense>
+              </ProtectedRoute>
             }
           />
         )
       })}
 
-      {/* 6. Coming Soon for Roadmap Items */}
+      {/* 7. Protected Coming Soon for Roadmap Items */}
       <Route
         path="/coming-soon/:id"
         element={
-          <Suspense fallback={<PageFallback />}>
-            <ComingSoonPage />
-          </Suspense>
+          <ProtectedRoute currentUser={currentUser}>
+            <Suspense fallback={<PageFallback />}>
+              <ComingSoonPage />
+            </Suspense>
+          </ProtectedRoute>
         }
       />
 
-      {/* 7. Shared Not Built Yet for unmatched buttons */}
+      {/* 8. Shared Not Built Yet for unmatched marketing buttons */}
       <Route path="/not-built-yet" element={<NotBuiltYetPage />} />
 
-      {/* 8. 404 Catch-All */}
+      {/* 9. 404 Catch-All */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )

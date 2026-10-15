@@ -1,66 +1,99 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft, FileText, Shield } from 'lucide-react'
-import { DemoBanner } from '@/components/DemoBanner'
+import { ArrowLeft, ShieldCheck, FileText } from 'lucide-react'
 
 export const PrivacyPage: React.FC = () => {
-  const { t } = useTranslation()
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      <DemoBanner />
-      <div className="py-8 px-4">
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <Link to="/login">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              <span>{t('common.back')}</span>
-            </Button>
+    <div style={{ minHeight: '100vh', background: 'var(--paper, #fbfbf9)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, padding: '36px clamp(16px, 4vw, 36px)', maxWidth: '800px', margin: '0 auto', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <Link
+            to="/"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '999px',
+              border: '1px solid var(--line, #e9e9e5)',
+              background: '#ffffff',
+              fontSize: '12px',
+              fontWeight: '700',
+              color: 'var(--charcoal-dark, #111a1a)',
+              textDecoration: 'none'
+            }}
+          >
+            <ArrowLeft size={13} />
+            <span>DocMatrix Home</span>
           </Link>
-          <div className="flex items-center gap-2 font-bold text-sm">
-            <Shield className="h-4 w-4 text-primary" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '800', color: 'var(--teal-primary, #008891)' }}>
+            <ShieldCheck size={16} />
             <span>DocMatrix Privacy</span>
           </div>
         </div>
 
-        <Alert className="border-amber-300 bg-amber-50 text-amber-900" data-testid="draft-notice">
-          <FileText className="h-4 w-4 text-amber-700" />
-          <AlertTitle className="font-semibold">{t('legal.draftNotice')}</AlertTitle>
-          <AlertDescription className="text-xs">
-            This document is a frontend draft specification for the DocMatrix multi-clinic platform.
-          </AlertDescription>
-        </Alert>
+        {/* Draft Notice */}
+        <div
+          style={{
+            background: '#fef3c7',
+            border: '1px solid #fde68a',
+            borderRadius: '12px',
+            padding: '14px 18px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px',
+            marginBottom: '24px'
+          }}
+          data-testid="draft-notice"
+        >
+          <FileText size={18} style={{ color: '#d97706', marginTop: '2px', flexShrink: 0 }} />
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: '800', color: '#92400e', marginBottom: '2px' }}>
+              DRAFT: final text to be supplied after legal review
+            </div>
+            <div style={{ fontSize: '12px', color: '#b45309', lineHeight: '1.5' }}>
+              This document is a frontend draft specification for the DocMatrix multi-clinic practice management platform.
+            </div>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('legal.privacyTitle')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm text-foreground/90 leading-relaxed">
-            <h4 className="font-semibold text-base">1. Health Data Protection</h4>
-            <p>
-              DocMatrix maintains tenant isolation for each dental clinic organization. Patient
-              records, clinical charting, and radiographic notes are managed under strict clinic
-              stewardship without third-party data sharing.
-            </p>
+        <div style={{ background: '#ffffff', borderRadius: '18px', border: '1px solid var(--line, #e9e9e5)', padding: '32px clamp(20px, 4vw, 40px)', boxShadow: '0 2px 12px rgba(0,0,0,0.02)' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)', marginBottom: '8px' }}>
+            Privacy Notice
+          </h1>
+          <p style={{ fontSize: '12px', color: 'var(--charcoal-muted, #6e7e7d)', marginBottom: '24px' }}>
+            Last updated: October 2026 • Patient Confidentiality Policy
+          </p>
 
-            <h4 className="font-semibold text-base">2. Security and Device Verification</h4>
-            <p>
-              Access to clinic patient data requires verified staff credentials, session isolation,
-              and role-based permissions designed in alignment with Indian healthcare digital guidelines.
-            </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', fontSize: '13.5px', color: 'var(--charcoal-body, #475554)', lineHeight: '1.65' }}>
+            <section>
+              <h2 style={{ fontSize: '16px', fontWeight: '750', color: 'var(--charcoal-title, #1a2626)', marginBottom: '6px' }}>
+                1. Healthcare Information Protection
+              </h2>
+              <p>
+                Patient personal data, radiographic scans, digital prescriptions, and periodontal charts are encrypted in transit and at rest. Access is strictly granted to licensed practitioners treating the patient.
+              </p>
+            </section>
 
-            <h4 className="font-semibold text-base">3. Draft Privacy Disclaimer</h4>
-            <p className="italic text-muted-foreground">
-              {t('legal.draftNotice')}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+            <section>
+              <h2 style={{ fontSize: '16px', fontWeight: '750', color: 'var(--charcoal-title, #1a2626)', marginBottom: '6px' }}>
+                2. Communication & WhatsApp Reminders
+              </h2>
+              <p>
+                Appointment confirmations, digital prescription PDFs, and recall reminders sent via WhatsApp require explicit patient consent. Patients may opt out of automated recall campaigns at any time.
+              </p>
+            </section>
+
+            <section>
+              <h2 style={{ fontSize: '16px', fontWeight: '750', color: 'var(--charcoal-title, #1a2626)', marginBottom: '6px' }}>
+                3. ABDM Compliance
+              </h2>
+              <p>
+                DocMatrix adheres to Indian Ayushman Bharat Digital Mission (ABDM) guidelines for federated health records, ensuring patient consent prior to diagnostic record sharing.
+              </p>
+            </section>
+          </div>
+        </div>
       </div>
     </div>
   )

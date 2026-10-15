@@ -20,16 +20,16 @@ function MedicalCrossMark({ light = false }) {
   )
 }
 
-// 8 Demo Staff Roles
+// 8 Demo Staff Roles (Decision D1 & D5)
 const DEMO_STAFF_ROLES = [
-  { role: 'DOCTOR', name: 'Dr. Arun Kumar', phone: '+910000000104' },
-  { role: 'ORGANIZATION_ADMIN', name: 'Dr. Rajesh Nair (Owner)', phone: '+910000000101' },
-  { role: 'BRANCH_ADMIN', name: 'Priya Menon (Branch Mgr)', phone: '+910000000102' },
-  { role: 'RECEPTIONIST', name: 'Ananya S (Front Desk)', phone: '+910000000103' },
-  { role: 'NURSE', name: 'Suma Joseph (Clinic Nurse)', phone: '+910000000105' },
-  { role: 'LAB_TECHNICIAN', name: 'Rahul V (Lab Tech)', phone: '+910000000106' },
-  { role: 'PHARMACIST', name: 'Deepa K (Pharmacist)', phone: '+910000000107' },
-  { role: 'ACCOUNTANT', name: 'Manoj Pillai (Accounts)', phone: '+910000000108' }
+  { id: 'usr-101', role: 'ORGANIZATION_ADMIN', name: 'Dr. Arun Kumar (Owner)', phone: '+910000000101' },
+  { id: 'usr-102', role: 'BRANCH_ADMIN', name: 'Priya Menon (Branch Mgr)', phone: '+910000000102' },
+  { id: 'usr-103', role: 'RECEPTIONIST', name: 'Ananya S (Front Desk)', phone: '+910000000103' },
+  { id: 'usr-104', role: 'DOCTOR', name: 'Dr. Rajesh Nair (Doctor)', phone: '+910000000104' },
+  { id: 'usr-105', role: 'NURSE', name: 'Suma Joseph (Clinic Nurse)', phone: '+910000000105' },
+  { id: 'usr-106', role: 'LAB_TECHNICIAN', name: 'Rahul V (Lab Tech)', phone: '+910000000106' },
+  { id: 'usr-107', role: 'PHARMACIST', name: 'Deepa K (Pharmacist)', phone: '+910000000107' },
+  { id: 'usr-108', role: 'ACCOUNTANT', name: 'Manoj Pillai (Accounts)', phone: '+910000000108' }
 ]
 
 // All 55 Launch Features exactly from the DocMatrix Feature Plan
@@ -42,7 +42,7 @@ const ALL_LAUNCH_FEATURES = [
   { id: 'appt.enquiries', area: 'Appointments', name: 'Missed enquiries', route: '/appointments/missed-enquiries', desc: 'Missed enquiries (half-finished online bookings)', source: 'Part 1' },
 
   // Patients
-  { id: 'pat.list', area: 'Patients', name: 'Patients list', route: '/patients', desc: 'Patients: permanent ID, search by name, phone or ID', source: 'Part 1' },
+  { id: 'pat.list', area: 'Patients', name: 'Patients list', route: '/patients/list', desc: 'Patients: permanent ID, search by name, phone or ID', source: 'Part 1' },
   { id: 'pat.new', area: 'Patients', name: 'Register patient', route: '/patients/new', desc: 'Register patient', source: 'Part 1' },
   { id: 'pat.profile', area: 'Patients', name: 'Patient profile', route: '/patients/:id', desc: 'Patient profile: medical and dental history, allergy warnings at the top, assigned doctor', source: 'Part 1', inNav: false },
   { id: 'pat.timeline', area: 'Patients', name: 'Visit timeline', route: '/patients/:id/timeline', desc: 'Visit-by-visit timeline', source: 'Part 1', inNav: false },
@@ -193,15 +193,19 @@ export default function StaffPortal({
     return !activeFeature.roles.includes(currentUser.role)
   }, [activeFeature, currentUser.role])
 
-  // Switch role handler
+  // Switch role handler (stores ONLY user id in sessionStorage)
   const handleRoleSelect = (roleObj) => {
     const updated = {
       ...currentUser,
+      id: roleObj.id,
       role: roleObj.role,
       name: roleObj.name,
       phone: roleObj.phone
     }
     setCurrentUser(updated)
+    try {
+      sessionStorage.setItem('docmatrix-demo-session', roleObj.id)
+    } catch {}
     setRoleDropdownOpen(false)
     if (onUserChange) onUserChange(updated)
   }
@@ -464,9 +468,15 @@ export default function StaffPortal({
             </button>
           </div>
 
-          {/* Grouped Areas */}
+          {/* Grouped Areas (Forbidden items hidden per Decision D4 / P3) */}
           <div style={{ padding: '8px 14px 20px 14px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {Object.entries(groupedAreas).map(([areaName, features]) => {
+              if (areaName === 'Accounts' && !['ORGANIZATION_ADMIN', 'ACCOUNTANT'].includes(currentUser.role)) {
+                return null
+              }
+              if (areaName === 'Settings' && !['ORGANIZATION_ADMIN', 'BRANCH_ADMIN'].includes(currentUser.role)) {
+                return null
+              }
               const IconComp = AREA_ICONS[areaName] || Calendar
               return (
                 <div key={areaName}>
@@ -487,12 +497,14 @@ export default function StaffPortal({
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '2px' }}>
                     {features.map((feat) => {
+                      if (feat.roles && !feat.roles.includes(currentUser.role)) {
+                        return null
+                      }
                       const isCurrent = activeRoute === feat.route
-                      const isRestricted = feat.roles && !feat.roles.includes(currentUser.role)
                       return (
                         <button
                           key={feat.id}
-                          onClick={() => navigateTo(feat.route)}
+                          onClick={() => navigateTo(feat.route.includes(':id') ? feat.route.replace(':id', feat.area === 'Patients' ? 'pt-1001' : 'apt-101') : feat.route)}
                           style={{
                             width: '100%',
                             display: 'flex',
@@ -502,7 +514,7 @@ export default function StaffPortal({
                             borderRadius: '8px',
                             border: 'none',
                             background: isCurrent ? 'rgba(0, 136, 145, 0.1)' : 'transparent',
-                            color: isCurrent ? 'var(--teal-primary, #008891)' : isRestricted ? '#94a3b8' : 'var(--charcoal-body, #475554)',
+                            color: isCurrent ? 'var(--teal-primary, #008891)' : 'var(--charcoal-body, #475554)',
                             fontSize: '12px',
                             fontWeight: isCurrent ? '750' : '550',
                             textAlign: 'left',
@@ -513,13 +525,7 @@ export default function StaffPortal({
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {feat.name}
                           </span>
-                          {isRestricted ? (
-                            <span style={{ fontSize: '9px', fontWeight: '700', padding: '1px 4px', borderRadius: '4px', background: '#f1f5f9', color: '#64748b' }}>
-                              Locked
-                            </span>
-                          ) : isCurrent ? (
-                            <ChevronRight size={12} />
-                          ) : null}
+                          {isCurrent && <ChevronRight size={12} />}
                         </button>
                       )
                     })}
@@ -791,7 +797,7 @@ export default function StaffPortal({
                 </table>
               </div>
             </div>
-          ) : activeRoute === '/patients' ? (
+          ) : activeRoute === '/patients' || activeRoute === '/patients/list' ? (
             /* ===============================================================
                PATIENTS DIRECTORY SCREEN
                =============================================================== */

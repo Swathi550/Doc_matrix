@@ -1,57 +1,112 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { ShieldX, Home } from 'lucide-react'
-import { useCurrentUser } from '@/hooks/useAuth'
-import { DemoBanner } from '@/components/DemoBanner'
+import { ShieldAlert, Home, ArrowLeft } from 'lucide-react'
+import { findDemoUserById } from '@/mocks/auth'
 
 export const ForbiddenPage: React.FC = () => {
-  const { t } = useTranslation()
-  const { data: user } = useCurrentUser()
+  const sessionUserId = typeof window !== 'undefined' ? sessionStorage.getItem('docmatrix-demo-session') : null
+  const user = sessionUserId ? findDemoUserById(sessionUserId) : null
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
-      <DemoBanner />
-      <div className="p-4 flex items-center justify-center my-auto">
-        <Card className="max-w-md w-full text-center shadow-md">
-          <CardHeader className="space-y-2 pb-2">
-            <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center">
-              <ShieldX className="h-6 w-6" />
-            </div>
-            <CardTitle className="text-xl font-bold tracking-tight">
-              403 - {t('errors.forbiddenTitle')}
-            </CardTitle>
-            <CardDescription className="text-sm">
-              {t('errors.forbiddenDesc')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-2">
-            {user && (
-              <div className="p-3 bg-muted/60 rounded-md text-xs text-muted-foreground text-left space-y-1">
-                <div>
-                  <span className="font-semibold text-foreground">Logged in as:</span> {user.name}
-                </div>
-                <div>
-                  <span className="font-semibold text-foreground">Current role:</span>{' '}
-                  <span className="font-mono">{user.role}</span>
-                </div>
-              </div>
-            )}
+    <div style={{ minHeight: '100vh', background: 'var(--paper, #fbfbf9)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 16px' }}>
+        <div
+          style={{
+            maxWidth: '520px',
+            width: '100%',
+            background: '#ffffff',
+            borderRadius: '18px',
+            border: '1px solid #fee2e2',
+            padding: '36px 28px',
+            textAlign: 'center',
+            boxShadow: '0 4px 24px rgba(220, 38, 38, 0.08)'
+          }}
+          data-testid="forbidden-page"
+        >
+          <div
+            style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              background: '#fef2f2',
+              color: '#dc2626',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 18px auto'
+            }}
+          >
+            <ShieldAlert size={30} />
+          </div>
 
-            <div className="flex gap-2 justify-center pt-2">
-              <Link to="/dashboard">
-                <Button className="gap-2">
-                  <Home className="h-4 w-4" />
-                  <span>{t('errors.backToDashboard')}</span>
-                </Button>
-              </Link>
+          <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#991b1b', marginBottom: '8px' }}>
+            403 - Access Forbidden
+          </h1>
+          <p style={{ fontSize: '13.5px', color: 'var(--charcoal-body, #475554)', lineHeight: '1.55', marginBottom: '20px' }}>
+            Your current staff role does not have permission to view this clinical or financial module.
+          </p>
+
+          {user && (
+            <div
+              style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '10px',
+                padding: '12px 16px',
+                fontSize: '12px',
+                color: '#475569',
+                textAlign: 'left',
+                marginBottom: '24px',
+                lineHeight: '1.6'
+              }}
+            >
+              <div><strong>Staff Member:</strong> {user.name}</div>
+              <div><strong>Active Role:</strong> <span style={{ fontFamily: 'monospace', fontWeight: '700' }}>{user.role}</span></div>
+              <div><strong>Clinic:</strong> {user.clinicName}</div>
             </div>
-          </CardContent>
-        </Card>
+          )}
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link
+              to="/dashboard"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '9px 20px',
+                borderRadius: '999px',
+                background: 'var(--teal-primary, #008891)',
+                color: '#ffffff',
+                fontSize: '13px',
+                fontWeight: '700',
+                textDecoration: 'none'
+              }}
+            >
+              <Home size={15} />
+              <span>Return to Dashboard</span>
+            </Link>
+            <Link
+              to="/"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '9px 18px',
+                borderRadius: '999px',
+                border: '1px solid var(--line, #e9e9e5)',
+                background: '#ffffff',
+                color: 'var(--charcoal-dark, #111a1a)',
+                fontSize: '13px',
+                fontWeight: '600',
+                textDecoration: 'none'
+              }}
+            >
+              <ArrowLeft size={15} />
+              <span>DocMatrix Home</span>
+            </Link>
+          </div>
+        </div>
       </div>
-      <div className="py-2" />
     </div>
   )
 }

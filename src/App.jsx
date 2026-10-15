@@ -11,6 +11,18 @@ import AuthPage from './AuthPage'
 import StaffPortal from './StaffPortal'
 import AppRoutes from './routes/appRoutes'
 import DemoBanner from './components/DemoBanner'
+import { findDemoUserById, DEMO_USERS } from './mocks/auth'
+
+function getSafeNextPath(rawNext) {
+  if (!rawNext) return '/dashboard'
+  try {
+    const decoded = decodeURIComponent(rawNext)
+    if (decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.includes('://')) {
+      return decoded
+    }
+  } catch {}
+  return '/dashboard'
+}
 
 // Authentic Clinical Healthcare Imagery (Zero Bank/ATM Reference)
 const clinicalImagery = {
@@ -27,25 +39,28 @@ const clinicalImagery = {
 // Healthcare Ecosystem Ticker Partners
 const partners = ['EMR Sync ↗', '▲ MedTech', '~ WhatsApp API', '▣ LabXpress', 'Practo Connect', 'Rx Gateway', 'ABDM Ready']
 
-// Clinical Doctors & Practice Activity Indicators
+const createInitialsAvatar = (initials, bg) =>
+  `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"><rect width="96" height="96" rx="48" fill="${bg}"/><text x="50%" y="54%" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="700" fill="%23ffffff" text-anchor="middle" dominant-baseline="middle">${initials}</text></svg>`
+
+// Clinical Doctors & Practice Activity Indicators (Offline Local SVG Avatars)
 const doctorsProof = [
   [
-    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=96&q=80',
+    createInitialsAvatar('SK', '%23008891'),
     'Dr. Shannon Kirkland',
     'Cardiology • Synced'
   ],
   [
-    'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=96&q=80',
+    createInitialsAvatar('TA', '%230f766e'),
     'Dr. Tariq Antoun',
     'Oncology • Active'
   ],
   [
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=96&q=80',
+    createInitialsAvatar('SF', '%230284c7'),
     'Sarah Fredericksen',
     'Lab Diagnostics • 99.8%'
   ],
   [
-    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=96&q=80',
+    createInitialsAvatar('MC', '%23059669'),
     'Metro Care Health',
     '+520 Clinics Live'
   ]
@@ -828,14 +843,27 @@ export default function App() {
   const [lineTwo, setLineTwo] = useState('********************')
   const mosaicRef = useRef(null)
 
-  // Authenticated Staff User Session State (Integrated after Login)
+  // Authenticated Staff User Session State (Holds ONLY user ID in sessionStorage)
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const saved = sessionStorage.getItem('docmatrix-demo-session')
-      if (saved) return JSON.parse(saved)
+      if (saved) {
+        if (saved.startsWith('{')) {
+          const parsed = JSON.parse(saved)
+          return findDemoUserById(parsed.id) || parsed
+        }
+        return findDemoUserById(saved) || DEMO_USERS.ORGANIZATION_ADMIN
+      }
     } catch {}
     return null
   })
+
+  // Logged-in user opening /login or /signup goes to /dashboard (Problem P2)
+  useEffect(() => {
+    if (currentUser && (location.pathname === '/login' || location.pathname === '/signup')) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [currentUser, location.pathname, navigate])
 
   // Hash compatibility: support deep-linking via #/route if accessed
   useEffect(() => {
@@ -854,9 +882,12 @@ export default function App() {
   const handleLoginSuccess = (user) => {
     setCurrentUser(user)
     try {
-      sessionStorage.setItem('docmatrix-demo-session', JSON.stringify(user))
+      sessionStorage.setItem('docmatrix-demo-session', user.id)
     } catch {}
-    navigate('/dashboard')
+    const params = new URLSearchParams(location.search)
+    const rawNext = params.get('next')
+    const safeNext = getSafeNextPath(rawNext)
+    navigate(safeNext)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -985,7 +1016,7 @@ export default function App() {
 
   return (
     <div className="docmatrix-app-root">
-      {location.pathname !== '/' && <DemoBanner />}
+      <DemoBanner />
       <AppRoutes
         currentUser={currentUser}
         onLoginSuccess={handleLoginSuccess}
@@ -1565,8 +1596,8 @@ export default function App() {
         <div className="wrap footer-bottom-bar">
           <p>© {new Date().getFullYear()} DocMatrix Technologies. All rights reserved. Healthcare in Sync.</p>
           <div className="footer-legal">
-            <a href="/not-built-yet?button=Privacy%20Policy" onClick={(e) => { e.preventDefault(); navigate('/not-built-yet?button=Privacy%20Policy') }}>Privacy Policy</a>
-            <a href="/not-built-yet?button=Terms%20of%20Service" onClick={(e) => { e.preventDefault(); navigate('/not-built-yet?button=Terms%20of%20Service') }}>Terms of Service</a>
+            <a href="/privacy" onClick={(e) => { e.preventDefault(); navigate('/privacy'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Privacy Policy</a>
+            <a href="/terms" onClick={(e) => { e.preventDefault(); navigate('/terms'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Terms of Service</a>
             <a href="/not-built-yet?button=Security%20%26%20Compliance" onClick={(e) => { e.preventDefault(); navigate('/not-built-yet?button=Security%20%26%20Compliance') }}>Security & HIPAA/ABDM Compliance</a>
           </div>
         </div>

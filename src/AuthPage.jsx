@@ -1,9 +1,9 @@
-import { useState, useId } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
-  Mail, Lock, Eye, EyeOff, Building2, UserRound, Phone, Check, ArrowRight,
-  ArrowLeft, AlertCircle, CheckCircle2, ShieldCheck, X, FileText, ExternalLink,
-  Sparkles, Calendar, Layers, Activity, CreditCard
+  Phone, ArrowRight, ArrowLeft, AlertCircle, CheckCircle2, ShieldCheck,
+  Building2, UserRound, MapPin, Check, RefreshCw, KeyRound, Sparkles
 } from 'lucide-react'
+import { DEMO_USERS, findDemoUserByPhone, MOCK_VALID_OTP } from '@/mocks/auth'
 
 // DocMatrix Brand Cross Mark
 function MedicalCrossMark({ light = false }) {
@@ -17,898 +17,659 @@ function MedicalCrossMark({ light = false }) {
   )
 }
 
-export default function AuthPage({ view = 'login', onNavigate, onBackHome, onLoginSuccess }) {
-  // Current active view: 'login' | 'signup'
+const INDIAN_STATES = [
+  'Kerala', 'Tamil Nadu', 'Karnataka', 'Maharashtra', 'Andhra Pradesh',
+  'Telangana', 'Delhi', 'Gujarat', 'Uttar Pradesh', 'West Bengal'
+]
+
+const CLINIC_TYPES = [
+  'Solo dentist',
+  'Multi-dentist clinic',
+  'Clinic chain'
+]
+
+export default function AuthPage({
+  view = 'login',
+  onNavigate,
+  onBackHome,
+  onLoginSuccess
+}) {
   const isLogin = view === 'login'
 
-  // Password visibility states
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  // Step state: 1 = Phone / Details, 2 = 6-digit Code Verification
+  const [step, setStep] = useState(1)
 
-  // Login form state (pre-filled with demo credentials for instant 1-click login)
-  const [loginForm, setLoginForm] = useState({
-    identifier: 'doctor@docmatrix.in',
-    password: 'Password123!',
-    rememberMe: true
-  })
+  // Login Phone State
+  const [phone, setPhone] = useState('+910000000101')
+  const [phoneError, setPhoneError] = useState('')
 
-  // Sign up form state
+  // 6-digit OTP Verification State
+  const [code, setCode] = useState('')
+  const [codeError, setCodeError] = useState('')
+  const [wrongTries, setWrongTries] = useState(0)
+  const [resendCountdown, setResendCountdown] = useState(60)
+  const [timerActive, setTimerActive] = useState(false)
+
+  // Sign-up Form State
   const [signupForm, setSignupForm] = useState({
     clinicName: '',
     fullName: '',
-    email: '',
     phone: '',
-    password: '',
-    confirmPassword: '',
-    agreeTerms: false
+    city: '',
+    state: 'Kerala',
+    clinicType: 'Solo dentist',
+    agreeTerms: false,
+    whatsappConsent: false
   })
+  const [signupErrors, setSignupErrors] = useState({})
 
-  // Errors state
-  const [errors, setErrors] = useState({})
-  
-  // Submission feedback state (Mock only)
-  const [submitting, setSubmitting] = useState(false)
-  const [submitSuccess, setSubmitSuccess] = useState(null)
-
-  // Modals state
-  const [modalType, setModalType] = useState(null) // 'terms' | 'privacy' | 'forgot'
-  const [forgotEmail, setForgotEmail] = useState('')
-  const [forgotSubmitted, setForgotSubmitted] = useState(false)
-  const [forgotError, setForgotError] = useState('')
-
-  // Handle Login field changes
-  const handleLoginChange = (e) => {
-    const { name, value, type, checked } = e.target
-    setLoginForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }))
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }))
+  // Resend Countdown Timer
+  useEffect(() => {
+    let interval = null
+    if (timerActive && resendCountdown > 0) {
+      interval = setInterval(() => {
+        setResendCountdown((prev) => prev - 1)
+      }, 1000)
+    } else if (resendCountdown === 0) {
+      setTimerActive(false)
     }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [timerActive, resendCountdown])
+
+  // Handle Request Code (Login Step 1)
+  const handleRequestLoginCode = (e) => {
+    if (e) e.preventDefault()
+    const clean = phone.trim()
+    if (!clean) {
+      setPhoneError('Please enter your mobile number')
+      return
+    }
+    if (clean.replace(/\D/g, '').length < 10) {
+      setPhoneError('Please enter a valid 10-digit mobile number')
+      return
+    }
+    setPhoneError('')
+    setStep(2)
+    setCode('')
+    setCodeError('')
+    setWrongTries(0)
+    setResendCountdown(60)
+    setTimerActive(true)
   }
 
-  // Handle Signup field changes
-  const handleSignupChange = (e) => {
-    const { name, value, type, checked } = e.target
-    setSignupForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }))
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }))
-    }
-  }
-
-  // Validate Login form
-  const validateLoginForm = () => {
-    const newErrors = {}
-    if (!loginForm.identifier.trim()) {
-      newErrors.identifier = 'Please enter your email or phone number'
-    }
-    if (!loginForm.password.trim()) {
-      newErrors.password = 'Please enter your password'
-    }
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  // Validate Sign Up form
-  const validateSignupForm = () => {
-    const newErrors = {}
-    if (!signupForm.clinicName.trim()) {
-      newErrors.clinicName = 'Clinic or practice name is required'
-    }
-    if (!signupForm.fullName.trim()) {
-      newErrors.fullName = 'Full name is required'
-    }
-    if (!signupForm.email.trim()) {
-      newErrors.email = 'Email address is required'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupForm.email.trim())) {
-      newErrors.email = 'Please enter a valid email address'
-    }
+  // Handle Signup Validation (Signup Step 1)
+  const handleRequestSignupCode = (e) => {
+    if (e) e.preventDefault()
+    const errors = {}
+    if (!signupForm.clinicName.trim()) errors.clinicName = 'Clinic name is required'
+    if (!signupForm.fullName.trim()) errors.fullName = 'Full name is required'
     if (!signupForm.phone.trim()) {
-      newErrors.phone = 'Phone number is required'
-    } else if (!/^[0-9+\s-]{8,16}$/.test(signupForm.phone.trim())) {
-      newErrors.phone = 'Please enter a valid contact phone number'
+      errors.phone = 'Mobile number is required'
+    } else if (signupForm.phone.replace(/\D/g, '').length < 10) {
+      errors.phone = 'Enter a valid 10-digit mobile number'
     }
-    if (!signupForm.password) {
-      newErrors.password = 'Password is required'
-    } else if (signupForm.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters long'
-    }
-    if (!signupForm.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password'
-    } else if (signupForm.password !== signupForm.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match'
-    }
-    if (!signupForm.agreeTerms) {
-      newErrors.agreeTerms = 'You must agree to the Terms and Privacy Policy'
-    }
+    if (!signupForm.city.trim()) errors.city = 'City or town is required'
+    if (!signupForm.agreeTerms) errors.agreeTerms = 'You must agree to the Terms and Privacy Notice'
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    setSignupErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
+    setPhone(signupForm.phone)
+    setStep(2)
+    setCode('')
+    setCodeError('')
+    setWrongTries(0)
+    setResendCountdown(60)
+    setTimerActive(true)
   }
 
-  // Handle Login Submit (Frontend UI only)
-  const handleLoginSubmit = (e) => {
-    e.preventDefault()
-    setSubmitSuccess(null)
-    if (!validateLoginForm()) return
+  // Handle OTP Submission (Step 2)
+  const handleVerifyOtp = (e) => {
+    if (e) e.preventDefault()
 
-    setSubmitting(true)
-    setTimeout(() => {
-      setSubmitting(false)
-      const user = {
-        id: 'usr-104',
-        name: 'Dr. Arun Kumar',
-        role: 'DOCTOR',
-        clinicName: 'Demo Dental Clinic',
-        phone: loginForm.identifier || '+910000000104'
-      }
-      if (onLoginSuccess) {
-        onLoginSuccess(user)
+    if (wrongTries >= 5) {
+      setCodeError('Too many tries. Request a new code.')
+      return
+    }
+
+    if (code !== MOCK_VALID_OTP) {
+      const nextTries = wrongTries + 1
+      setWrongTries(nextTries)
+      if (nextTries >= 5) {
+        setCodeError('Too many tries. Request a new code.')
       } else {
-        setSubmitSuccess({
-          title: 'Sign In Successful',
-          message: 'Opening your DocMatrix Clinic Dashboard...',
-          actionUrl: '#/dashboard'
-        })
+        setCodeError("That code didn't work. Check it or request a new one.")
       }
-    }, 300)
-  }
+      return
+    }
 
-  // Handle Sign Up Submit (Frontend UI only)
-  const handleSignupSubmit = (e) => {
-    e.preventDefault()
-    setSubmitSuccess(null)
-    if (!validateSignupForm()) return
-
-    setSubmitting(true)
-    setTimeout(() => {
-      setSubmitting(false)
-      const user = {
+    // Correct code: 123456
+    let user
+    if (isLogin) {
+      user = findDemoUserByPhone(phone) || DEMO_USERS.ORGANIZATION_ADMIN
+    } else {
+      user = {
         id: 'usr-101',
         name: signupForm.fullName || 'Dr. Clinic Admin',
         role: 'ORGANIZATION_ADMIN',
         clinicName: signupForm.clinicName || 'My Dental Clinic',
-        phone: signupForm.phone || '+910000000101'
+        phone: signupForm.phone || '+910000000101',
+        clinicId: 'clinic-demo-001'
       }
-      if (onLoginSuccess) {
-        onLoginSuccess(user)
-      } else {
-        setSubmitSuccess({
-          title: 'Clinic Account Registered',
-          message: `Welcome, ${signupForm.fullName}! Opening your DocMatrix Clinic Dashboard...`,
-          actionUrl: '#/dashboard'
-        })
-      }
-    }, 300)
-  }
-
-  // Handle Forgot Password Submit (Mock)
-  const handleForgotSubmit = (e) => {
-    e.preventDefault()
-    if (!forgotEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forgotEmail.trim())) {
-      setForgotError('Please enter a valid email address')
-      return
     }
-    setForgotError('')
-    setForgotSubmitted(true)
+
+    // Rule: sessionStorage must hold ONLY the mock user id under "docmatrix-demo-session"
+    sessionStorage.setItem('docmatrix-demo-session', user.id)
+
+    if (onLoginSuccess) {
+      onLoginSuccess(user)
+    }
   }
 
-  // Switch between views
-  const switchView = (targetView) => (e) => {
-    if (e) e.preventDefault()
-    setErrors({})
-    setSubmitSuccess(null)
-    onNavigate(targetView)
+  // Quick 1-Click Demo Login as any role
+  const handleDemoRoleClick = (roleKey) => {
+    const roleUser = DEMO_USERS[roleKey]
+    if (!roleUser) return
+    sessionStorage.setItem('docmatrix-demo-session', roleUser.id)
+    if (onLoginSuccess) {
+      onLoginSuccess(roleUser)
+    }
+  }
+
+  const handleResend = () => {
+    setCode('')
+    setCodeError('')
+    setWrongTries(0)
+    setResendCountdown(60)
+    setTimerActive(true)
   }
 
   return (
-    <div className="auth-page-root">
-      <div className="auth-split-layout">
-        {/* ===================================================================
-            LEFT PANEL: BRAND & WELCOME SHOWCASE
-            =================================================================== */}
-        <aside className="auth-showcase-panel">
-          <div className="auth-showcase-bg-image" />
-          <div className="auth-showcase-overlay" />
-          <div className="auth-showcase-grid-accent" />
+    <div style={{ minHeight: '100vh', background: 'var(--paper, #fbfbf9)', display: 'flex', flexDirection: 'column' }}>
+      {/* Top Brand Bar */}
+      <header style={{
+        background: '#ffffff',
+        borderBottom: '1px solid var(--line, #e9e9e5)',
+        padding: '12px clamp(16px, 4vw, 36px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={onBackHome}>
+          <MedicalCrossMark />
+          <span style={{ fontSize: '15px', fontWeight: '800', letterSpacing: '0.04em', color: 'var(--charcoal-title, #1a2626)' }}>
+            DOC MATRIX
+          </span>
+        </div>
 
-          <div className="auth-showcase-content">
-            {/* Top Brand Link */}
-            <header className="auth-showcase-header">
-              <a
-                href="#top"
-                onClick={onBackHome}
-                className="auth-brand-anchor"
-                aria-label="DocMatrix Home"
-              >
-                <MedicalCrossMark light={true} />
-                <span className="auth-brand-name">DOC MATRIX</span>
-              </a>
-              <span className="auth-suite-badge">CLINIC PRACTICE SUITE</span>
-            </header>
+        <button
+          onClick={onBackHome}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 14px',
+            borderRadius: '999px',
+            border: '1px solid var(--line, #e9e9e5)',
+            background: '#ffffff',
+            fontSize: '12px',
+            fontWeight: '700',
+            color: 'var(--charcoal-dark, #111a1a)',
+            cursor: 'pointer'
+          }}
+        >
+          <ArrowLeft size={13} />
+          <span>Back to Home</span>
+        </button>
+      </header>
 
-            {/* Dynamic Welcome Content */}
-            <div className="auth-welcome-body">
-              {isLogin ? (
-                /* Login Welcome Panel */
-                <div className="auth-welcome-fade">
-                  <div className="auth-welcome-tag">
-                    <Sparkles size={14} />
-                    <span>SECURE CLINIC PORTAL</span>
-                  </div>
-                  <h1 className="auth-welcome-title">Welcome Back to DocMatrix</h1>
-                  <p className="auth-welcome-desc">
-                    Manage your dental practice with connected patient records, appointments,
-                    clinical workflows, and billing — all in one place.
-                  </p>
-
-                  <div className="auth-trust-card">
-                    <div className="auth-trust-icon-box">
-                      <ShieldCheck size={22} className="auth-trust-icon" />
-                    </div>
-                    <div className="auth-trust-text">
-                      <div className="auth-trust-title">Clinical Reliability & Data Protection</div>
-                      <div className="auth-trust-sub">
-                        Role-based clinic security, HIPAA & ABDM ready architecture, and continuous clinical uptime.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* Sign Up Welcome Panel */
-                <div className="auth-welcome-fade">
-                  <div className="auth-welcome-tag">
-                    <Sparkles size={14} />
-                    <span>PRACTICE ONBOARDING</span>
-                  </div>
-                  <h1 className="auth-welcome-title">
-                    Digitise Your Clinic. Simplify Every Workflow.
-                  </h1>
-                  <p className="auth-welcome-desc">
-                    Bring patient records, appointment scheduling, dental treatment workflows,
-                    and financial management together with DocMatrix.
-                  </p>
-
-                  {/* 4 Supporting Points Requested */}
-                  <div className="auth-feature-points-list">
-                    <div className="auth-feature-point-item">
-                      <div className="auth-point-check">
-                        <Check size={14} strokeWidth={3} />
-                      </div>
-                      <div className="auth-point-text">
-                        <strong>Connected Patient Records</strong>
-                        <span>Permanent patient charts, medical histories, and digital radiographic notes.</span>
-                      </div>
-                    </div>
-
-                    <div className="auth-feature-point-item">
-                      <div className="auth-point-check">
-                        <Check size={14} strokeWidth={3} />
-                      </div>
-                      <div className="auth-point-text">
-                        <strong>Smarter Appointment Management</strong>
-                        <span>Real-time chair booking, doctor schedules, and automated visit queues.</span>
-                      </div>
-                    </div>
-
-                    <div className="auth-feature-point-item">
-                      <div className="auth-point-check">
-                        <Check size={14} strokeWidth={3} />
-                      </div>
-                      <div className="auth-point-text">
-                        <strong>Integrated Dental Workflows</strong>
-                        <span>Chairside dental charts, interactive odontograms, and lab orders.</span>
-                      </div>
-                    </div>
-
-                    <div className="auth-feature-point-item">
-                      <div className="auth-point-check">
-                        <Check size={14} strokeWidth={3} />
-                      </div>
-                      <div className="auth-point-text">
-                        <strong>Connected Billing & Accounts</strong>
-                        <span>Itemised treatment billing, GST-ready invoicing, and complete collection tracking.</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Bottom Support Callout */}
-            <footer className="auth-showcase-footer">
-              <span className="auth-footer-dot" />
-              <span>Need help? Practice support: <a href="mailto:info@docmatrix.co.in">info@docmatrix.co.in</a></span>
-            </footer>
-          </div>
-        </aside>
-
-        {/* ===================================================================
-            RIGHT PANEL: AUTHENTICATION FORMS
-            =================================================================== */}
-        <section className="auth-form-panel">
-          {/* Top Bar for Form Panel */}
-          <div className="auth-form-topbar">
-            <button onClick={onBackHome} className="auth-back-link">
-              <ArrowLeft size={16} />
-              <span>Back to DocMatrix</span>
-            </button>
-
-            <div className="auth-badge-demo" title="Frontend-only preview mode">
-              <span className="demo-dot" />
-              UI Prototype Only
-            </div>
-          </div>
-
-          <div className="auth-form-container">
-            {/* Mobile Branding (Visible only on small viewports) */}
-            <div className="auth-mobile-brand">
-              <MedicalCrossMark />
-              <span className="brand-title">DOC MATRIX</span>
-            </div>
-
-            {/* Form Header */}
-            <div className="auth-form-header">
-              <span className="auth-form-kicker">
-                {isLogin ? 'CLINIC ACCESS' : 'GET STARTED'}
-              </span>
-              <h2 className="auth-form-title">
-                {isLogin ? 'Clinic Login' : 'Clinic Sign Up'}
-              </h2>
-              <p className="auth-form-subtitle">
-                {isLogin
-                  ? 'Enter your clinic credentials to access your DocMatrix workspace.'
-                  : 'Set up your dental practice management workspace in minutes.'}
-              </p>
-            </div>
-
-            {/* Notice Banner: Frontend-only note */}
-            <div className="auth-ui-notice" role="note">
-              <div className="auth-ui-notice-icon">
-                <AlertCircle size={16} />
-              </div>
-              <div className="auth-ui-notice-text">
-                <strong>Frontend UI Only:</strong> Authentication APIs, user accounts, and databases are not connected.
-              </div>
-            </div>
-
-            {/* Success Feedback Alert (Mock) */}
-            {submitSuccess && (
-              <div className="auth-success-banner" role="status">
-                <div className="auth-success-icon">
-                  <CheckCircle2 size={20} />
-                </div>
-                <div>
-                  <h4>{submitSuccess.title}</h4>
-                  <p>{submitSuccess.message}</p>
-                </div>
-              </div>
-            )}
-
-            {/* ===============================================================
-                LOGIN FORM
-                =============================================================== */}
-            {isLogin ? (
-              <form onSubmit={handleLoginSubmit} className="auth-form" noValidate>
-                {/* Email / Phone Field */}
-                <div className={`auth-field-group ${errors.identifier ? 'has-error' : ''}`}>
-                  <label htmlFor="login-identifier" className="auth-label">
-                    Email or Phone Number
-                  </label>
-                  <div className="auth-input-wrap">
-                    <span className="auth-input-icon">
-                      <Mail size={17} />
-                    </span>
-                    <input
-                      id="login-identifier"
-                      name="identifier"
-                      type="text"
-                      className="auth-input"
-                      placeholder="e.g. doctor@clinic.com or 9876543210"
-                      value={loginForm.identifier}
-                      onChange={handleLoginChange}
-                      autoComplete="username"
-                    />
-                  </div>
-                  {errors.identifier && (
-                    <p className="auth-error-msg" role="alert">
-                      {errors.identifier}
-                    </p>
-                  )}
-                </div>
-
-                {/* Password Field with Show/Hide Toggle */}
-                <div className={`auth-field-group ${errors.password ? 'has-error' : ''}`}>
-                  <div className="auth-label-row">
-                    <label htmlFor="login-password" className="auth-label">
-                      Password
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setModalType('forgot')}
-                      className="auth-forgot-link"
-                    >
-                      Forgot Password?
-                    </button>
-                  </div>
-                  <div className="auth-input-wrap">
-                    <span className="auth-input-icon">
-                      <Lock size={17} />
-                    </span>
-                    <input
-                      id="login-password"
-                      name="password"
-                      type={showPassword ? 'text' : 'password'}
-                      className="auth-input"
-                      placeholder="Enter your password"
-                      value={loginForm.password}
-                      onChange={handleLoginChange}
-                      autoComplete="current-password"
-                    />
-                    <button
-                      type="button"
-                      className="auth-pw-toggle"
-                      onClick={() => setShowPassword(!showPassword)}
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <p className="auth-error-msg" role="alert">
-                      {errors.password}
-                    </p>
-                  )}
-                </div>
-
-                {/* Remember Me Checkbox */}
-                <div className="auth-remember-row">
-                  <label className="auth-checkbox-label">
-                    <input
-                      type="checkbox"
-                      name="rememberMe"
-                      checked={loginForm.rememberMe}
-                      onChange={handleLoginChange}
-                      className="auth-checkbox"
-                    />
-                    <span>Remember this device for 30 days</span>
-                  </label>
-                </div>
-
-                {/* Sign In Button */}
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="auth-submit-btn"
-                >
-                  {submitting ? (
-                    <span className="auth-btn-spinner-wrap">
-                      <span className="auth-btn-spinner" /> Validating...
-                    </span>
-                  ) : (
-                    <>
-                      <span>Login to Clinic</span>
-                      <ArrowRight size={17} />
-                    </>
-                  )}
-                </button>
-
-                {/* Toggle to Sign Up */}
-                <div className="auth-switch-prompt">
-                  <span>Don't have a DocMatrix clinic account?</span>
-                  <button
-                    type="button"
-                    onClick={switchView('signup')}
-                    className="auth-switch-btn"
-                  >
-                    Sign Up now
-                  </button>
-                </div>
-              </form>
-            ) : (
-              /* ===============================================================
-                 SIGN UP FORM
-                 =============================================================== */
-              <form onSubmit={handleSignupSubmit} className="auth-form" noValidate>
-                {/* 2-Column Grid for Clinic & Doctor Name */}
-                <div className="auth-row-2col">
-                  {/* Clinic Name */}
-                  <div className={`auth-field-group ${errors.clinicName ? 'has-error' : ''}`}>
-                    <label htmlFor="signup-clinic" className="auth-label">
-                      Clinic / Practice Name <span className="auth-req">*</span>
-                    </label>
-                    <div className="auth-input-wrap">
-                      <span className="auth-input-icon">
-                        <Building2 size={17} />
-                      </span>
-                      <input
-                        id="signup-clinic"
-                        name="clinicName"
-                        type="text"
-                        className="auth-input"
-                        placeholder="e.g. Apex Dental Care"
-                        value={signupForm.clinicName}
-                        onChange={handleSignupChange}
-                      />
-                    </div>
-                    {errors.clinicName && (
-                      <p className="auth-error-msg" role="alert">
-                        {errors.clinicName}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Doctor / Admin Name */}
-                  <div className={`auth-field-group ${errors.fullName ? 'has-error' : ''}`}>
-                    <label htmlFor="signup-name" className="auth-label">
-                      Full Name <span className="auth-req">*</span>
-                    </label>
-                    <div className="auth-input-wrap">
-                      <span className="auth-input-icon">
-                        <UserRound size={17} />
-                      </span>
-                      <input
-                        id="signup-name"
-                        name="fullName"
-                        type="text"
-                        className="auth-input"
-                        placeholder="e.g. Dr. Sarah Jenkins"
-                        value={signupForm.fullName}
-                        onChange={handleSignupChange}
-                      />
-                    </div>
-                    {errors.fullName && (
-                      <p className="auth-error-msg" role="alert">
-                        {errors.fullName}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* 2-Column Grid for Email & Phone */}
-                <div className="auth-row-2col">
-                  {/* Email */}
-                  <div className={`auth-field-group ${errors.email ? 'has-error' : ''}`}>
-                    <label htmlFor="signup-email" className="auth-label">
-                      Work Email <span className="auth-req">*</span>
-                    </label>
-                    <div className="auth-input-wrap">
-                      <span className="auth-input-icon">
-                        <Mail size={17} />
-                      </span>
-                      <input
-                        id="signup-email"
-                        name="email"
-                        type="email"
-                        className="auth-input"
-                        placeholder="e.g. doctor@apexdental.in"
-                        value={signupForm.email}
-                        onChange={handleSignupChange}
-                        autoComplete="email"
-                      />
-                    </div>
-                    {errors.email && (
-                      <p className="auth-error-msg" role="alert">
-                        {errors.email}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Phone Number */}
-                  <div className={`auth-field-group ${errors.phone ? 'has-error' : ''}`}>
-                    <label htmlFor="signup-phone" className="auth-label">
-                      Phone Number <span className="auth-req">*</span>
-                    </label>
-                    <div className="auth-input-wrap">
-                      <span className="auth-input-icon">
-                        <Phone size={17} />
-                      </span>
-                      <input
-                        id="signup-phone"
-                        name="phone"
-                        type="tel"
-                        className="auth-input"
-                        placeholder="e.g. +91 98765 43210"
-                        value={signupForm.phone}
-                        onChange={handleSignupChange}
-                        autoComplete="tel"
-                      />
-                    </div>
-                    {errors.phone && (
-                      <p className="auth-error-msg" role="alert">
-                        {errors.phone}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* 2-Column Grid for Passwords */}
-                <div className="auth-row-2col">
-                  {/* Password with Show/Hide */}
-                  <div className={`auth-field-group ${errors.password ? 'has-error' : ''}`}>
-                    <label htmlFor="signup-password" className="auth-label">
-                      Password <span className="auth-req">*</span>
-                    </label>
-                    <div className="auth-input-wrap">
-                      <span className="auth-input-icon">
-                        <Lock size={17} />
-                      </span>
-                      <input
-                        id="signup-password"
-                        name="password"
-                        type={showPassword ? 'text' : 'password'}
-                        className="auth-input"
-                        placeholder="Min. 8 characters"
-                        value={signupForm.password}
-                        onChange={handleSignupChange}
-                        autoComplete="new-password"
-                      />
-                      <button
-                        type="button"
-                        className="auth-pw-toggle"
-                        onClick={() => setShowPassword(!showPassword)}
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                      </button>
-                    </div>
-                    {errors.password && (
-                      <p className="auth-error-msg" role="alert">
-                        {errors.password}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Confirm Password with Show/Hide */}
-                  <div className={`auth-field-group ${errors.confirmPassword ? 'has-error' : ''}`}>
-                    <label htmlFor="signup-confirm-password" className="auth-label">
-                      Confirm Password <span className="auth-req">*</span>
-                    </label>
-                    <div className="auth-input-wrap">
-                      <span className="auth-input-icon">
-                        <Lock size={17} />
-                      </span>
-                      <input
-                        id="signup-confirm-password"
-                        name="confirmPassword"
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        className="auth-input"
-                        placeholder="Re-enter password"
-                        value={signupForm.confirmPassword}
-                        onChange={handleSignupChange}
-                        autoComplete="new-password"
-                      />
-                      <button
-                        type="button"
-                        className="auth-pw-toggle"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                      </button>
-                    </div>
-                    {errors.confirmPassword && (
-                      <p className="auth-error-msg" role="alert">
-                        {errors.confirmPassword}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Terms and Conditions Checkbox */}
-                <div className={`auth-field-group ${errors.agreeTerms ? 'has-error' : ''}`}>
-                  <label className="auth-checkbox-label auth-terms-checkbox">
-                    <input
-                      type="checkbox"
-                      name="agreeTerms"
-                      checked={signupForm.agreeTerms}
-                      onChange={handleSignupChange}
-                      className="auth-checkbox"
-                    />
-                    <span>
-                      I agree to the{' '}
-                      <button
-                        type="button"
-                        onClick={() => setModalType('terms')}
-                        className="auth-inline-link"
-                      >
-                        Terms and Conditions
-                      </button>{' '}
-                      and{' '}
-                      <button
-                        type="button"
-                        onClick={() => setModalType('privacy')}
-                        className="auth-inline-link"
-                      >
-                        Privacy Policy
-                      </button>
-                      .
-                    </span>
-                  </label>
-                  {errors.agreeTerms && (
-                    <p className="auth-error-msg" role="alert">
-                      {errors.agreeTerms}
-                    </p>
-                  )}
-                </div>
-
-                {/* Create Account Button */}
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="auth-submit-btn"
-                >
-                  {submitting ? (
-                    <span className="auth-btn-spinner-wrap">
-                      <span className="auth-btn-spinner" /> Creating Account...
-                    </span>
-                  ) : (
-                    <>
-                      <span>Sign Up</span>
-                      <ArrowRight size={17} />
-                    </>
-                  )}
-                </button>
-
-                {/* Toggle to Login */}
-                <div className="auth-switch-prompt">
-                  <span>Already have a DocMatrix clinic account?</span>
-                  <button
-                    type="button"
-                    onClick={switchView('login')}
-                    className="auth-switch-btn"
-                  >
-                    Login here
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </section>
-      </div>
-
-      {/* ===================================================================
-          MODALS: FORGOT PASSWORD / TERMS / PRIVACY (FRONTEND ONLY)
-          =================================================================== */}
-      {modalType && (
-        <div className="auth-modal-backdrop" onClick={() => setModalType(null)}>
-          <div
-            className="auth-modal-card"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-          >
-            <div className="auth-modal-header">
-              <div className="auth-modal-title-group">
-                <MedicalCrossMark />
-                <h3 className="auth-modal-title">
-                  {modalType === 'forgot' && 'Reset Clinic Password'}
-                  {modalType === 'terms' && 'DocMatrix Terms of Service'}
-                  {modalType === 'privacy' && 'DocMatrix Privacy Policy'}
-                </h3>
-              </div>
+      {/* Main Container */}
+      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '36px 16px' }}>
+        <div style={{ maxWidth: '480px', width: '100%' }}>
+          {/* Main Auth Card */}
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '20px',
+            border: '1px solid var(--line, #e9e9e5)',
+            padding: '32px clamp(20px, 4vw, 36px)',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
+            marginBottom: '20px'
+          }}>
+            {/* View Selector Tabs (Login / Register) */}
+            <div style={{ display: 'flex', background: '#f4f6f5', padding: '4px', borderRadius: '12px', marginBottom: '24px' }}>
               <button
-                className="auth-modal-close"
-                onClick={() => setModalType(null)}
-                aria-label="Close modal"
+                onClick={() => {
+                  setStep(1)
+                  setCodeError('')
+                  onNavigate('login')
+                }}
+                style={{
+                  flex: 1,
+                  padding: '9px',
+                  borderRadius: '9px',
+                  border: 'none',
+                  background: isLogin ? '#ffffff' : 'transparent',
+                  color: isLogin ? 'var(--charcoal-title, #1a2626)' : 'var(--charcoal-muted, #6e7e7d)',
+                  fontSize: '13px',
+                  fontWeight: isLogin ? '750' : '600',
+                  boxShadow: isLogin ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
+                  cursor: 'pointer'
+                }}
               >
-                <X size={18} />
+                Sign In
+              </button>
+              <button
+                onClick={() => {
+                  setStep(1)
+                  setCodeError('')
+                  onNavigate('signup')
+                }}
+                style={{
+                  flex: 1,
+                  padding: '9px',
+                  borderRadius: '9px',
+                  border: 'none',
+                  background: !isLogin ? '#ffffff' : 'transparent',
+                  color: !isLogin ? 'var(--charcoal-title, #1a2626)' : 'var(--charcoal-muted, #6e7e7d)',
+                  fontSize: '13px',
+                  fontWeight: !isLogin ? '750' : '600',
+                  boxShadow: !isLogin ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                Register Practice
               </button>
             </div>
 
-            <div className="auth-modal-body">
-              {modalType === 'forgot' && (
-                <div>
-                  {forgotSubmitted ? (
-                    <div className="auth-modal-success">
-                      <CheckCircle2 size={36} className="auth-modal-success-icon" />
-                      <h4>Password Reset Requested</h4>
-                      <p>
-                        A mock recovery notification was triggered for <strong>{forgotEmail}</strong>.
-                      </p>
-                      <p className="auth-modal-note">
-                        Note: This is a frontend UI prototype. In the production deployment, an encrypted one-time recovery link will be dispatched to your registered address.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setModalType(null)
-                          setForgotSubmitted(false)
-                          setForgotEmail('')
-                        }}
-                        className="auth-submit-btn"
-                        style={{ marginTop: '1.25rem' }}
-                      >
-                        Return to Login
-                      </button>
+            {/* STEP 1: LOGIN (Phone Input) */}
+            {isLogin && step === 1 && (
+              <form onSubmit={handleRequestLoginCode}>
+                <h1 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)', marginBottom: '6px' }}>
+                  Sign in to Clinic Portal
+                </h1>
+                <p style={{ fontSize: '13px', color: 'var(--charcoal-body, #475554)', marginBottom: '20px' }}>
+                  Enter your registered mobile number to receive a 6-digit verification code.
+                </p>
+
+                <div style={{ marginBottom: '18px' }}>
+                  <label htmlFor="login-phone" style={{ display: 'block', fontSize: '12px', fontWeight: '750', color: 'var(--charcoal-title, #1a2626)', marginBottom: '6px' }}>
+                    Mobile Number
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <Phone size={15} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--charcoal-muted, #6e7e7d)' }} />
+                    <input
+                      id="login-phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => {
+                        setPhone(e.target.value)
+                        setPhoneError('')
+                      }}
+                      placeholder="+910000000101"
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px 10px 36px',
+                        borderRadius: '10px',
+                        border: phoneError ? '1px solid #ef4444' : '1px solid var(--line, #e9e9e5)',
+                        fontSize: '14px',
+                        outline: 'none',
+                        background: '#ffffff'
+                      }}
+                    />
+                  </div>
+                  {phoneError && <div style={{ fontSize: '11.5px', color: '#dc2626', marginTop: '4px' }}>{phoneError}</div>}
+                  <div style={{ fontSize: '11px', color: 'var(--charcoal-muted, #6e7e7d)', marginTop: '6px' }}>
+                    Pre-filled with Owner demo account (+910000000101).
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn-hero-teal"
+                  style={{
+                    width: '100%',
+                    padding: '11px',
+                    borderRadius: '10px',
+                    fontSize: '13.5px',
+                    fontWeight: '750',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <span>Request Verification Code</span>
+                  <ArrowRight size={15} />
+                </button>
+              </form>
+            )}
+
+            {/* STEP 1: SIGN-UP (Practice Details) */}
+            {!isLogin && step === 1 && (
+              <form onSubmit={handleRequestSignupCode}>
+                <h1 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)', marginBottom: '6px' }}>
+                  Register Dental Practice
+                </h1>
+                <p style={{ fontSize: '12.5px', color: 'var(--charcoal-body, #475554)', marginBottom: '18px' }}>
+                  Create your clinic account on the <strong style={{ color: 'var(--teal-primary, #008891)' }}>Free plan</strong>.
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '18px' }}>
+                  <div>
+                    <label htmlFor="signup-clinic" style={{ display: 'block', fontSize: '12px', fontWeight: '750', marginBottom: '4px' }}>
+                      Clinic Name *
+                    </label>
+                    <input
+                      id="signup-clinic"
+                      type="text"
+                      value={signupForm.clinicName}
+                      onChange={(e) => setSignupForm({ ...signupForm, clinicName: e.target.value })}
+                      placeholder="e.g. Kerala Dental Speciality"
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: '9px', border: signupErrors.clinicName ? '1px solid #ef4444' : '1px solid var(--line, #e9e9e5)', fontSize: '13px' }}
+                    />
+                    {signupErrors.clinicName && <div style={{ fontSize: '11px', color: '#dc2626', marginTop: '2px' }}>{signupErrors.clinicName}</div>}
+                  </div>
+
+                  <div>
+                    <label htmlFor="signup-doctor" style={{ display: 'block', fontSize: '12px', fontWeight: '750', marginBottom: '4px' }}>
+                      Owner or Doctor Full Name *
+                    </label>
+                    <input
+                      id="signup-doctor"
+                      type="text"
+                      value={signupForm.fullName}
+                      onChange={(e) => setSignupForm({ ...signupForm, fullName: e.target.value })}
+                      placeholder="e.g. Dr. Arun Kumar"
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: '9px', border: signupErrors.fullName ? '1px solid #ef4444' : '1px solid var(--line, #e9e9e5)', fontSize: '13px' }}
+                    />
+                    {signupErrors.fullName && <div style={{ fontSize: '11px', color: '#dc2626', marginTop: '2px' }}>{signupErrors.fullName}</div>}
+                  </div>
+
+                  <div>
+                    <label htmlFor="signup-phone" style={{ display: 'block', fontSize: '12px', fontWeight: '750', marginBottom: '4px' }}>
+                      Mobile Number *
+                    </label>
+                    <input
+                      id="signup-phone"
+                      type="tel"
+                      value={signupForm.phone}
+                      onChange={(e) => setSignupForm({ ...signupForm, phone: e.target.value })}
+                      placeholder="+91 98765 43210"
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: '9px', border: signupErrors.phone ? '1px solid #ef4444' : '1px solid var(--line, #e9e9e5)', fontSize: '13px' }}
+                    />
+                    {signupErrors.phone && <div style={{ fontSize: '11px', color: '#dc2626', marginTop: '2px' }}>{signupErrors.phone}</div>}
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label htmlFor="signup-city" style={{ display: 'block', fontSize: '12px', fontWeight: '750', marginBottom: '4px' }}>
+                        City or Town *
+                      </label>
+                      <input
+                        id="signup-city"
+                        type="text"
+                        value={signupForm.city}
+                        onChange={(e) => setSignupForm({ ...signupForm, city: e.target.value })}
+                        placeholder="e.g. Kochi"
+                        style={{ width: '100%', padding: '9px 12px', borderRadius: '9px', border: signupErrors.city ? '1px solid #ef4444' : '1px solid var(--line, #e9e9e5)', fontSize: '13px' }}
+                      />
+                      {signupErrors.city && <div style={{ fontSize: '11px', color: '#dc2626', marginTop: '2px' }}>{signupErrors.city}</div>}
                     </div>
-                  ) : (
-                    <form onSubmit={handleForgotSubmit}>
-                      <p className="auth-modal-lead">
-                        Enter your clinic work email to receive password recovery instructions.
-                      </p>
-                      <div className={`auth-field-group ${forgotError ? 'has-error' : ''}`}>
-                        <label htmlFor="forgot-email-input" className="auth-label">Work Email</label>
-                        <div className="auth-input-wrap">
-                          <span className="auth-input-icon">
-                            <Mail size={17} />
-                          </span>
-                          <input
-                            id="forgot-email-input"
-                            type="email"
-                            className="auth-input"
-                            placeholder="e.g. doctor@clinic.com"
-                            value={forgotEmail}
-                            onChange={(e) => {
-                              setForgotEmail(e.target.value)
-                              setForgotError('')
-                            }}
-                          />
-                        </div>
-                        {forgotError && (
-                          <p className="auth-error-msg" role="alert">
-                            {forgotError}
-                          </p>
-                        )}
-                      </div>
-                      <div className="auth-modal-actions">
-                        <button
-                          type="button"
-                          onClick={() => setModalType(null)}
-                          className="auth-modal-cancel-btn"
-                        >
-                          Cancel
-                        </button>
-                        <button type="submit" className="auth-submit-btn">
-                          Send Recovery Instructions
-                        </button>
-                      </div>
-                    </form>
+
+                    <div>
+                      <label htmlFor="signup-state" style={{ display: 'block', fontSize: '12px', fontWeight: '750', marginBottom: '4px' }}>
+                        State
+                      </label>
+                      <select
+                        id="signup-state"
+                        value={signupForm.state}
+                        onChange={(e) => setSignupForm({ ...signupForm, state: e.target.value })}
+                        style={{ width: '100%', padding: '9px 10px', borderRadius: '9px', border: '1px solid var(--line, #e9e9e5)', fontSize: '13px', background: '#ffffff' }}
+                      >
+                        {INDIAN_STATES.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="signup-type" style={{ display: 'block', fontSize: '12px', fontWeight: '750', marginBottom: '4px' }}>
+                      Clinic Type
+                    </label>
+                    <select
+                      id="signup-type"
+                      value={signupForm.clinicType}
+                      onChange={(e) => setSignupForm({ ...signupForm, clinicType: e.target.value })}
+                      style={{ width: '100%', padding: '9px 10px', borderRadius: '9px', border: '1px solid var(--line, #e9e9e5)', fontSize: '13px', background: '#ffffff' }}
+                    >
+                      {CLINIC_TYPES.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Required Terms Checkbox */}
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', cursor: 'pointer', color: 'var(--charcoal-body, #475554)' }}>
+                      <input
+                        type="checkbox"
+                        checked={signupForm.agreeTerms}
+                        onChange={(e) => setSignupForm({ ...signupForm, agreeTerms: e.target.checked })}
+                        style={{ marginTop: '2px' }}
+                      />
+                      <span>
+                        I agree to the <a href="/terms" target="_blank" rel="noreferrer" style={{ color: 'var(--teal-primary, #008891)', fontWeight: '700' }}>Terms</a> and the <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: 'var(--teal-primary, #008891)', fontWeight: '700' }}>Privacy Notice</a> *
+                      </span>
+                    </label>
+                    {signupErrors.agreeTerms && <div style={{ fontSize: '11px', color: '#dc2626', marginTop: '2px' }}>{signupErrors.agreeTerms}</div>}
+                  </div>
+
+                  {/* Optional WhatsApp Updates Checkbox */}
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', cursor: 'pointer', color: 'var(--charcoal-body, #475554)' }}>
+                    <input
+                      type="checkbox"
+                      checked={signupForm.whatsappConsent}
+                      onChange={(e) => setSignupForm({ ...signupForm, whatsappConsent: e.target.checked })}
+                      style={{ marginTop: '2px' }}
+                    />
+                    <span>Receive product updates and clinical release notes on WhatsApp</span>
+                  </label>
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn-hero-teal"
+                  style={{
+                    width: '100%',
+                    padding: '11px',
+                    borderRadius: '10px',
+                    fontSize: '13.5px',
+                    fontWeight: '750',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <span>Verify Phone & Create Practice</span>
+                  <ArrowRight size={15} />
+                </button>
+              </form>
+            )}
+
+            {/* STEP 2: 6-DIGIT CODE VERIFICATION (Common for Login and Sign-up) */}
+            {step === 2 && (
+              <form onSubmit={handleVerifyOtp}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(0, 136, 145, 0.1)', color: 'var(--teal-primary, #008891)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <KeyRound size={20} />
+                  </div>
+                  <div>
+                    <h2 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)', margin: 0 }}>
+                      Enter 6-digit Code
+                    </h2>
+                    <div style={{ fontSize: '12px', color: 'var(--charcoal-muted, #6e7e7d)' }}>
+                      Sent to {phone}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Neutral Message (Never reveals if registered) */}
+                <div style={{ padding: '10px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', color: '#475569', marginBottom: '16px' }}>
+                  If this number is registered, a code has been sent.
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <label htmlFor="otp-input" style={{ display: 'block', fontSize: '12px', fontWeight: '750', marginBottom: '6px' }}>
+                    Verification Code
+                  </label>
+                  <input
+                    id="otp-input"
+                    type="text"
+                    maxLength={6}
+                    value={code}
+                    onChange={(e) => {
+                      setCode(e.target.value.replace(/\D/g, ''))
+                      if (codeError && wrongTries < 5) setCodeError('')
+                    }}
+                    placeholder="123456"
+                    disabled={wrongTries >= 5}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '10px',
+                      border: codeError ? '1px solid #ef4444' : '1px solid var(--line, #e9e9e5)',
+                      fontSize: '20px',
+                      fontWeight: '800',
+                      letterSpacing: '0.25em',
+                      textAlign: 'center',
+                      background: wrongTries >= 5 ? '#f8fafc' : '#ffffff',
+                      outline: 'none'
+                    }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--teal-primary, #008891)', fontWeight: '700' }}>
+                      Demo code: 123456
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      style={{ fontSize: '11px', color: 'var(--charcoal-muted, #6e7e7d)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      Change number
+                    </button>
+                  </div>
+                  {codeError && (
+                    <div style={{ fontSize: '12px', color: '#dc2626', fontWeight: '600', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <AlertCircle size={14} />
+                      <span>{codeError}</span>
+                    </div>
                   )}
                 </div>
-              )}
 
-              {modalType === 'terms' && (
-                <div className="auth-legal-content">
-                  <h4>1. Acceptance of Clinical Terms</h4>
-                  <p>
-                    By using DocMatrix, your dental practice agrees to comply with standard healthcare data guidelines, doctor authentication standards, and treatment charting protocols.
-                  </p>
-                  <h4>2. Clinical Practice Autonomy</h4>
-                  <p>
-                    DocMatrix provides digital practice management, appointment coordination, itemised billing, and electronic clinical records. All clinical diagnoses, prescriptions, and treatment plans remain under the independent medical judgment of the licensed dentist.
-                  </p>
-                  <h4>3. Data Confidentiality & Protection</h4>
-                  <p>
-                    All patient clinical records, odontograms, radiographic scans, and billing receipts are encrypted in transit and at rest in accordance with ABDM and healthcare privacy standards.
-                  </p>
+                {/* Resend Countdown / Action */}
+                <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  {timerActive ? (
+                    <span style={{ fontSize: '12px', color: 'var(--charcoal-muted, #6e7e7d)' }}>
+                      Resend code in {resendCountdown}s
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleResend}
+                      style={{ fontSize: '12px', color: 'var(--teal-primary, #008891)', fontWeight: '700', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <RefreshCw size={12} />
+                      <span>Request a new code</span>
+                    </button>
+                  )}
                 </div>
-              )}
 
-              {modalType === 'privacy' && (
-                <div className="auth-legal-content">
-                  <h4>1. Patient Data Stewardship</h4>
-                  <p>
-                    DocMatrix acts as a secure platform custodian for dental practices. Your patient data, treatment records, and billing receipts are never sold, rented, or shared with third parties.
-                  </p>
-                  <h4>2. Encryption & Access Control</h4>
-                  <p>
-                    Practice records are protected by multi-tenant cryptographic isolation and role-based permissions (Doctor, Front Desk, Chairside Nurse, Billing Accountant).
-                  </p>
-                  <h4>3. Data Portability</h4>
-                  <p>
-                    Practices retain complete ownership of all clinical records, invoices, and appointment logs, with full data export options available at any time.
-                  </p>
-                </div>
-              )}
+                <button
+                  type="submit"
+                  disabled={wrongTries >= 5}
+                  className="btn-hero-teal"
+                  style={{
+                    width: '100%',
+                    padding: '11px',
+                    borderRadius: '10px',
+                    fontSize: '13.5px',
+                    fontWeight: '750',
+                    border: 'none',
+                    cursor: wrongTries >= 5 ? 'not-allowed' : 'pointer',
+                    opacity: wrongTries >= 5 ? 0.6 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <span>Verify Code & Continue</span>
+                  <Check size={16} />
+                </button>
+              </form>
+            )}
+          </div>
+
+          {/* DEMO ROLE 1-CLICK LOGIN PANEL */}
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            border: '1px solid var(--line, #e9e9e5)',
+            padding: '20px',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.02)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+              <Sparkles size={14} style={{ color: 'var(--teal-primary, #008891)' }} />
+              <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Instant Demo Login (Choose Role)
+              </span>
+            </div>
+            <p style={{ fontSize: '11.5px', color: 'var(--charcoal-muted, #6e7e7d)', marginBottom: '12px' }}>
+              Click any role button below to test role-based permissions immediately:
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
+              {Object.entries(DEMO_USERS).map(([roleKey, u]) => (
+                <button
+                  key={roleKey}
+                  type="button"
+                  onClick={() => handleDemoRoleClick(roleKey)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--line, #e9e9e5)',
+                    background: '#f8fafc',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: '750', color: 'var(--charcoal-title, #1a2626)' }}>
+                      {u.name}
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--charcoal-muted, #6e7e7d)', fontFamily: 'monospace' }}>
+                      {roleKey} • {u.phone}
+                    </div>
+                  </div>
+                  <ArrowRight size={12} style={{ color: 'var(--teal-primary, #008891)' }} />
+                </button>
+              ))}
             </div>
           </div>
         </div>
-      )}
+      </main>
     </div>
   )
 }
