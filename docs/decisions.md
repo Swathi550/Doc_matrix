@@ -41,9 +41,9 @@ The goal was to unify the existing Vite marketing web application (running on `l
   - **Option B (Via Staff Portal):** Click 1: Click "Login" or "Dashboard" $\rightarrow$ lands on `/dashboard`. Click 2: Click any feature in the sidebar or area switcher $\rightarrow$ lands directly on the feature page. (2 clicks total).
   - **Option C (Cross-Feature Navigation):** Every subpage contains sibling tabs allowing instant 1-click switching among all pages in the same clinical domain.
 
-### 5. Permanent Demo Banner
-- **Decision:** Place `<DemoBanner />` globally at the top root of `App.jsx`.
-- **Rationale:** Ensures every screen — whether landing page, authentication view, staff dashboard, area hub, subpage, not-built-yet, or 404 — displays the persistent demo banner: *"Demo only. Nothing is saved or sent. Do not enter real patient data."*
+### 5. Persistent Demo Banner on Staff and Feature Pages
+- **Decision:** Place `<DemoBanner />` conditionally in `App.jsx` (`location.pathname !== '/'`).
+- **Rationale:** Keeps the public landing page clean and professional as requested, while ensuring every internal screen — whether authentication view, staff dashboard, area hub, subpage, not-built-yet, or 404 — displays exactly one persistent demo banner: *"Demo only. Nothing is saved or sent. Do not enter real patient data."* Redundant internal banners were removed to avoid duplicate stacking.
 
 ### 6. Zero Network Calls Policy
 - **Decision:** Enforce 100% offline-ready mock data.
