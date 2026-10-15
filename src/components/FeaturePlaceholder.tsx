@@ -28,6 +28,117 @@ export const FeaturePlaceholder: React.FC<FeaturePlaceholderProps> = ({ id }) =>
     )
   }
 
+  const isUnknownRecord = params?.id && (params.id.startsWith('unknown') || params.id === 'invalid' || params.id === 'notfound')
+
+  if (isUnknownRecord) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--paper, #fbfbf9)', display: 'flex', flexDirection: 'column' }} data-testid={`record-not-found-${params.id}`}>
+        <header style={{
+          background: '#ffffff',
+          borderBottom: '1px solid var(--line, #e9e9e5)',
+          padding: '12px clamp(16px, 3vw, 32px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <Link
+            to={`/${feature.area.toLowerCase()}`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              borderRadius: '999px',
+              border: '1px solid var(--line, #e9e9e5)',
+              background: '#ffffff',
+              fontSize: '12px',
+              fontWeight: '700',
+              color: 'var(--charcoal-dark, #111a1a)',
+              textDecoration: 'none'
+            }}
+          >
+            <ArrowLeft size={13} style={{ color: 'var(--teal-primary, #008891)' }} />
+            <span>Back to {feature.area} Hub</span>
+          </Link>
+          <Link
+            to="/dashboard"
+            style={{
+              fontSize: '12px',
+              fontWeight: '700',
+              color: 'var(--charcoal-dark, #111a1a)',
+              textDecoration: 'none'
+            }}
+          >
+            Dashboard
+          </Link>
+        </header>
+
+        <main style={{ flex: 1, padding: '40px 24px', maxWidth: '640px', margin: '0 auto', width: '100%' }}>
+          <div style={{
+            background: '#ffffff',
+            border: '1px solid #fee2e2',
+            borderRadius: '16px',
+            padding: '32px',
+            textAlign: 'center',
+            boxShadow: '0 4px 16px rgba(220, 38, 38, 0.05)'
+          }}>
+            <div style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              background: '#fef2f2',
+              color: '#dc2626',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '16px'
+            }}>
+              <AlertCircle size={24} />
+            </div>
+            <h1 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)', marginBottom: '8px' }}>
+              Record Not Found
+            </h1>
+            <p style={{ fontSize: '13.5px', color: 'var(--charcoal-body, #475554)', lineHeight: '1.5', marginBottom: '20px' }}>
+              The record identifier <code style={{ background: '#f4f6f5', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace' }}>{params.id}</code> does not exist in the clinic demo database.
+            </p>
+            <div style={{
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '10px',
+              padding: '14px',
+              marginBottom: '24px',
+              fontSize: '12.5px',
+              textAlign: 'left'
+            }}>
+              <div style={{ fontWeight: '700', color: '#334155', marginBottom: '4px' }}>Demo ID Hints:</div>
+              <ul style={{ margin: 0, paddingLeft: '18px', color: '#64748b' }}>
+                <li>Patients: <Link to="/patients/pt-1001" style={{ color: 'var(--teal-primary, #008891)', fontWeight: '700' }}>pt-1001</Link></li>
+                <li>Appointments: <Link to="/appointments/apt-101" style={{ color: 'var(--teal-primary, #008891)', fontWeight: '700' }}>apt-101</Link></li>
+              </ul>
+            </div>
+            <Link
+              to={`/${feature.area.toLowerCase()}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '9px 18px',
+                borderRadius: '999px',
+                background: 'var(--teal-primary, #008891)',
+                color: '#ffffff',
+                fontSize: '12.5px',
+                fontWeight: '700',
+                textDecoration: 'none'
+              }}
+            >
+              Return to {feature.area} Hub
+            </Link>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
   const paramEntries = Object.entries(params || {}).filter(([_, v]) => v !== undefined)
   const siblingFeatures = FEATURE_REGISTRY.filter(
     (f) => f.area.toLowerCase() === feature.area.toLowerCase() && f.phase === 'launch'
@@ -131,7 +242,7 @@ export const FeaturePlaceholder: React.FC<FeaturePlaceholderProps> = ({ id }) =>
           </span>
           {siblingFeatures.map((sib) => {
             const isCurrent = sib.id === feature.id
-            const targetUrl = sib.route.replace(':id', sib.area === 'Patients' ? 'DM-2026-001' : 'appt-101')
+            const targetUrl = sib.route.replace(':id', sib.area === 'Patients' ? 'pt-1001' : 'apt-101')
             return (
               <Link
                 key={sib.id}

@@ -2,6 +2,7 @@ import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { FEATURE_REGISTRY, getRoadmapFeatures } from '@/features/registry'
 import { DemoBanner } from '@/components/DemoBanner'
+import { findDemoUserById } from '@/mocks/auth'
 import {
   Calendar, Users, Stethoscope, Receipt, BookOpen, Package, MessageSquare,
   Globe, BarChart3, Settings, Milestone, ArrowRight, ArrowLeft, Home,
@@ -50,43 +51,49 @@ const AREA_META = {
     desc: 'Online patient booking on real slots, reviews showcase, and booking approval inbox.'
   },
   reports: {
-    title: 'Analytics & Management Reports',
+    title: 'Reports & Clinical Practice Analytics',
     icon: BarChart3,
-    desc: 'Revenue breakdown, doctor performance, dues ageing, and booking conversion.'
+    desc: 'Revenue insights, doctor performance metrics, dues ageing, and booking conversion tracking.'
   },
   settings: {
-    title: 'Practice Settings & Staff Roles',
+    title: 'Clinic Settings & Administration',
     icon: Settings,
-    desc: 'Staff management, role-based permissions, clinic branches, and security audit logs.'
+    desc: 'Clinic profile configuration, staff permissions, activity audit logs, and data exports.'
   },
   roadmap: {
-    title: 'DocMatrix Product Roadmap (V2 & Later)',
+    title: 'Product Roadmap (Version 2 & Later)',
     icon: Milestone,
-    desc: 'Catalog of upcoming features, multi-branch scaling, dental imaging, and clinical AI assistants.'
+    desc: 'Upcoming advanced features planned for Version 2 and future expansion releases.'
   }
 }
 
 export function AreaPage({ areaKey }) {
-  const location = useLocation()
-  const key = areaKey || location.pathname.replace(/^\//, '').split('/')[0].toLowerCase()
-  const meta = AREA_META[key] || {
-    title: `${key.charAt(0).toUpperCase() + key.slice(1)} Area`,
+  const meta = AREA_META[areaKey] || {
+    title: `${areaKey.charAt(0).toUpperCase() + areaKey.slice(1)} Area`,
     icon: Compass,
-    desc: 'Clinical practice features cataloged for this operational domain.'
+    desc: 'Operational management area for DocMatrix clinic features.'
   }
-  const IconComp = meta.icon
 
-  // Retrieve features for this area
-  const isRoadmap = key === 'roadmap'
+  const Icon = meta.icon
+  const isRoadmap = areaKey === 'roadmap'
+
+  const sessionUserId = typeof window !== 'undefined' ? sessionStorage.getItem('docmatrix-demo-session') : null
+  const currentUser = sessionUserId ? findDemoUserById(sessionUserId) : null
+  const userRole = currentUser?.role || 'ORGANIZATION_ADMIN'
+
+  // Features belonging to this area
   const features = isRoadmap
     ? getRoadmapFeatures()
-    : FEATURE_REGISTRY.filter(
-        (f) => f.area.toLowerCase() === key || (key === 'billing' && f.area.toLowerCase() === 'billing')
-      )
+    : FEATURE_REGISTRY.filter((f) => f.area.toLowerCase() === areaKey.toLowerCase() && f.phase === 'launch')
+
+  // Accounts features for billing cross-navigation (Problem P5)
+  const accountsFeatures = areaKey === 'billing'
+    ? FEATURE_REGISTRY.filter((f) => f.area.toLowerCase() === 'accounts' && f.phase === 'launch')
+    : []
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--paper, #fbfbf9)', display: 'flex', flexDirection: 'column' }} data-testid={`area-page-${key}`}>
-      {/* Area Topbar Navigation */}
+    <div style={{ minHeight: '100vh', background: 'var(--paper, #fbfbf9)', display: 'flex', flexDirection: 'column' }} data-testid={`area-page-${areaKey}`}>
+      {/* Top Header */}
       <header style={{
         background: '#ffffff',
         borderBottom: '1px solid var(--line, #e9e9e5)',
@@ -168,13 +175,13 @@ export function AreaPage({ areaKey }) {
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <IconComp size={22} />
+              <Icon size={20} />
             </div>
             <div>
-              <span style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '0.06em', color: 'var(--teal-primary, #008891)', textTransform: 'uppercase' }}>
-                CLINICAL DOMAIN
-              </span>
-              <h1 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)', letterSpacing: '-0.02em' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--charcoal-muted, #6e7e7d)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Operational Area
+              </div>
+              <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)', margin: 0 }}>
                 {meta.title}
               </h1>
             </div>
@@ -191,7 +198,7 @@ export function AreaPage({ areaKey }) {
             {features.map((feat) => {
               const targetUrl = isRoadmap
                 ? `/coming-soon/${feat.id}`
-                : feat.route.replace(':id', feat.area === 'Patients' ? 'DM-2026-001' : 'appt-101')
+                : feat.route.replace(':id', feat.area === 'Patients' ? 'pt-1001' : 'apt-101')
               return (
                 <Link
                   key={feat.id}
@@ -232,7 +239,7 @@ export function AreaPage({ areaKey }) {
           {features.map((feat) => {
             const targetUrl = isRoadmap
               ? `/coming-soon/${feat.id}`
-              : feat.route.replace(':id', feat.area === 'Patients' ? 'DM-2026-001' : 'appt-101')
+              : feat.route.replace(':id', feat.area === 'Patients' ? 'pt-1001' : 'apt-101')
             return (
               <Link
                 key={feat.id}
@@ -296,6 +303,110 @@ export function AreaPage({ areaKey }) {
             )
           })}
         </div>
+
+        {/* Cross-linking for Accounts from Billing Area Hub (Problem P5) */}
+        {accountsFeatures.length > 0 && (
+          <div style={{ marginTop: '36px' }}>
+            <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h2 style={{ fontSize: '17px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)' }}>
+                  Accounts & Financial Ledgers ({accountsFeatures.length})
+                </h2>
+                <p style={{ fontSize: '12px', color: 'var(--charcoal-muted, #6e7e7d)', margin: '2px 0 0 0' }}>
+                  Double-entry accounting, day book, GST reports, and Tally export
+                </p>
+              </div>
+              <Link
+                to="/accounts"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  borderRadius: '999px',
+                  background: 'rgba(0, 136, 145, 0.08)',
+                  color: 'var(--teal-primary, #008891)',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  textDecoration: 'none'
+                }}
+              >
+                <span>Accounts Hub</span>
+                <ArrowRight size={13} />
+              </Link>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '16px'
+            }}>
+              {accountsFeatures.map((feat) => {
+                const isRestricted = !['ORGANIZATION_ADMIN', 'ACCOUNTANT'].includes(userRole)
+                return (
+                  <Link
+                    key={feat.id}
+                    to={feat.route}
+                    style={{
+                      background: '#ffffff',
+                      border: '1px solid var(--line, #e9e9e5)',
+                      borderRadius: '14px',
+                      padding: '20px',
+                      textDecoration: 'none',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
+                      opacity: isRestricted ? 0.8 : 1
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <span style={{
+                          fontSize: '10.5px',
+                          fontWeight: '800',
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          background: isRestricted ? '#fee2e2' : 'rgba(0, 136, 145, 0.08)',
+                          color: isRestricted ? '#dc2626' : 'var(--teal-primary, #008891)'
+                        }}>
+                          {isRestricted ? 'Restricted (Admin & Accountant only)' : 'Launch'}
+                        </span>
+                        <span style={{ fontSize: '11px', color: 'var(--charcoal-muted, #6e7e7d)', fontFamily: 'monospace' }}>
+                          {feat.source}
+                        </span>
+                      </div>
+                      <h3 style={{ fontSize: '15px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)', marginBottom: '6px' }}>
+                        {feat.name}
+                      </h3>
+                      <p style={{ fontSize: '12.5px', color: 'var(--charcoal-body, #475554)', lineHeight: '1.5', marginBottom: '16px' }}>
+                        {feat.description}
+                      </p>
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingTop: '12px',
+                      borderTop: '1px solid var(--line, #e9e9e5)',
+                      fontSize: '11.5px',
+                      color: 'var(--teal-primary, #008891)',
+                      fontWeight: '700'
+                    }}>
+                      <span style={{ fontFamily: 'monospace', color: 'var(--charcoal-muted, #6e7e7d)' }}>
+                        {feat.route}
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        Open Page <ArrowRight size={13} />
+                      </span>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

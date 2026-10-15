@@ -76,7 +76,7 @@ export const FEATURE_REGISTRY: FeatureEntry[] = [
     "source": "Part 1",
     "phase": "launch",
     "area": "Patients",
-    "route": "/patients",
+    "route": "/patients/list",
     "inNav": true
   },
   {
