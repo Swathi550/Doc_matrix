@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Calendar, Users, Stethoscope, Receipt, BookOpen, Package, MessageSquare, Globe,
   BarChart3, Settings, LayoutDashboard, LogOut, User, Menu, X, ChevronRight, ChevronDown,
-  Sparkles, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Clock,
+  Sparkles, CheckCircle2, ArrowRight, ArrowLeft, Clock,
   Check, ShieldAlert, CreditCard, Search, Plus, Filter, Phone, Mail, FileText,
   Trash2, Edit3, Printer, Share2, CheckCircle, RefreshCw
 } from 'lucide-react'
@@ -220,28 +220,7 @@ export default function StaffPortal({
       color: 'var(--ink, #0b0b0b)',
       fontFamily: '"Instrument Sans", "Plus Jakarta Sans", "Inter", -apple-system, sans-serif'
     }}>
-      {/* 1. Permanent Non-Dismissible Demo Banner */}
-      <div style={{
-        background: '#fef3c7',
-        borderBottom: '1px solid #fde68a',
-        padding: '7px 16px',
-        fontSize: '12px',
-        fontWeight: '700',
-        color: '#92400e',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        textAlign: 'center',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100
-      }}>
-        <AlertCircle size={15} style={{ color: '#d97706', flexShrink: 0 }} />
-        <span>Demo only. Nothing is saved or sent. Do not enter real patient data.</span>
-      </div>
-
-      {/* 2. Top Header */}
+      {/* Top Header */}
       <header style={{
         background: '#ffffff',
         borderBottom: '1px solid var(--line, #e9e9e5)',

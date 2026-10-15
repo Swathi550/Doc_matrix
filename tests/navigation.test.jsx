@@ -16,7 +16,7 @@ describe('DocMatrix Navigation & Architecture Validation', () => {
     window.location.hash = ''
   })
 
-  it('does NOT render DemoBanner on landing page, but renders on staff/feature pages', () => {
+  it('does NOT render DemoBanner on landing page, but renders exactly one on staff/feature pages', () => {
     const { unmount } = render(
       <MemoryRouter initialEntries={['/']}>
         <App />
@@ -26,7 +26,7 @@ describe('DocMatrix Navigation & Architecture Validation', () => {
     expect(screen.queryByTestId('demo-banner')).toBeNull()
     unmount()
 
-    render(
+    const { unmount: unmountAppointments } = render(
       <MemoryRouter initialEntries={['/appointments']}>
         <App />
       </MemoryRouter>
@@ -35,6 +35,18 @@ describe('DocMatrix Navigation & Architecture Validation', () => {
     const banner = screen.getByTestId('demo-banner')
     expect(banner).toBeInTheDocument()
     expect(banner).toHaveTextContent(/Demo only. Nothing is saved or sent/i)
+    unmountAppointments()
+
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <App />
+      </MemoryRouter>
+    )
+
+    const banners = screen.getAllByTestId('demo-banner')
+    expect(banners).toHaveLength(1)
+    const demoTexts = screen.getAllByText(/Demo only. Nothing is saved or sent/i)
+    expect(demoTexts).toHaveLength(1)
   })
 
   it('makes NO network calls during rendering or interaction', async () => {
