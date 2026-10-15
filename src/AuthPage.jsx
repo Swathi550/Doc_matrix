@@ -17,7 +17,7 @@ function MedicalCrossMark({ light = false }) {
   )
 }
 
-export default function AuthPage({ view = 'login', onNavigate, onBackHome }) {
+export default function AuthPage({ view = 'login', onNavigate, onBackHome, onLoginSuccess }) {
   // Current active view: 'login' | 'signup'
   const isLogin = view === 'login'
 
@@ -25,11 +25,11 @@ export default function AuthPage({ view = 'login', onNavigate, onBackHome }) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  // Login form state
+  // Login form state (pre-filled with demo credentials for instant 1-click login)
   const [loginForm, setLoginForm] = useState({
-    identifier: '',
-    password: '',
-    rememberMe: false
+    identifier: 'doctor@docmatrix.in',
+    password: 'Password123!',
+    rememberMe: true
   })
 
   // Sign up form state
@@ -85,19 +85,10 @@ export default function AuthPage({ view = 'login', onNavigate, onBackHome }) {
     const newErrors = {}
     if (!loginForm.identifier.trim()) {
       newErrors.identifier = 'Please enter your email or phone number'
-    } else if (
-      loginForm.identifier.includes('@') &&
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginForm.identifier.trim())
-    ) {
-      newErrors.identifier = 'Please enter a valid email address'
     }
-
-    if (!loginForm.password) {
+    if (!loginForm.password.trim()) {
       newErrors.password = 'Please enter your password'
-    } else if (loginForm.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters'
     }
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -146,14 +137,25 @@ export default function AuthPage({ view = 'login', onNavigate, onBackHome }) {
     if (!validateLoginForm()) return
 
     setSubmitting(true)
-    // Simulate brief interaction delay
     setTimeout(() => {
       setSubmitting(false)
-      setSubmitSuccess({
-        title: 'Mock Sign In Successful',
-        message: 'This is a frontend UI prototype. Authentication, sessions, and database connections are intentionally not implemented.'
-      })
-    }, 500)
+      const user = {
+        id: 'usr-104',
+        name: 'Dr. Arun Kumar',
+        role: 'DOCTOR',
+        clinicName: 'Demo Dental Clinic',
+        phone: loginForm.identifier || '+910000000104'
+      }
+      if (onLoginSuccess) {
+        onLoginSuccess(user)
+      } else {
+        setSubmitSuccess({
+          title: 'Sign In Successful',
+          message: 'Opening your DocMatrix Clinic Dashboard...',
+          actionUrl: '#/dashboard'
+        })
+      }
+    }, 300)
   }
 
   // Handle Sign Up Submit (Frontend UI only)
@@ -165,11 +167,23 @@ export default function AuthPage({ view = 'login', onNavigate, onBackHome }) {
     setSubmitting(true)
     setTimeout(() => {
       setSubmitting(false)
-      setSubmitSuccess({
-        title: 'Mock Clinic Account Created',
-        message: `Welcome, ${signupForm.fullName}! This is a frontend UI prototype. No backend server or database was contacted.`
-      })
-    }, 600)
+      const user = {
+        id: 'usr-101',
+        name: signupForm.fullName || 'Dr. Clinic Admin',
+        role: 'ORGANIZATION_ADMIN',
+        clinicName: signupForm.clinicName || 'My Dental Clinic',
+        phone: signupForm.phone || '+910000000101'
+      }
+      if (onLoginSuccess) {
+        onLoginSuccess(user)
+      } else {
+        setSubmitSuccess({
+          title: 'Clinic Account Registered',
+          message: `Welcome, ${signupForm.fullName}! Opening your DocMatrix Clinic Dashboard...`,
+          actionUrl: '#/dashboard'
+        })
+      }
+    }, 300)
   }
 
   // Handle Forgot Password Submit (Mock)

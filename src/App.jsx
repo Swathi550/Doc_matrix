@@ -6,7 +6,11 @@ import {
   Eye, Gauge, Network, Share2, Radio, CalendarClock, ChevronDown, ChevronRight, Activity, Sparkles,
   Play, Pause, Zap, CheckCircle2, RotateCcw, Package, MessageCircle, Receipt
 } from 'lucide-react'
+import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import AuthPage from './AuthPage'
+import StaffPortal from './StaffPortal'
+import AppRoutes from './routes/appRoutes'
+import DemoBanner from './components/DemoBanner'
 
 // Authentic Clinical Healthcare Imagery (Zero Bank/ATM Reference)
 const clinicalImagery = {
@@ -105,6 +109,7 @@ const solutions = [
 const detailedModules = [
   {
     id: 'records',
+    staffRoute: '/patients',
     number: '01',
     name: 'Patient Records & Dental Care',
     headline: 'Longitudinal dental records, connected tooth-by-tooth.',
@@ -127,6 +132,7 @@ const detailedModules = [
   },
   {
     id: 'appointments',
+    staffRoute: '/appointments/queue',
     number: '02',
     name: 'Appointments & Clinic Operations',
     headline: 'Smart scheduling, live queue tracking, and zero waiting-room confusion.',
@@ -149,6 +155,7 @@ const detailedModules = [
   },
   {
     id: 'clinical',
+    staffRoute: '/clinical/prescriptions',
     number: '03',
     name: 'Clinical Workflows & Prescriptions',
     headline: 'Fast structured clinical notes, diagnostic orders, and digital prescriptions.',
@@ -170,6 +177,7 @@ const detailedModules = [
   },
   {
     id: 'billing',
+    staffRoute: '/billing/invoices',
     number: '04',
     name: 'Billing, Accounts & Payments',
     headline: 'Itemised invoices, daily collection reconciliation, and Tally export.',
@@ -194,6 +202,7 @@ const detailedModules = [
   },
   {
     id: 'inventory',
+    staffRoute: '/inventory/items',
     number: '05',
     name: 'Inventory & Dental Lab',
     headline: 'Real-time stock alerts, purchase tracking, and dental lab coordination.',
@@ -216,6 +225,7 @@ const detailedModules = [
   },
   {
     id: 'engagement',
+    staffRoute: '/whatsapp/automation',
     number: '06',
     name: 'WhatsApp & Patient Engagement',
     headline: 'Automated appointment reminders, digital invoice delivery, and recall campaigns.',
@@ -796,7 +806,21 @@ function ModuleDetailPage({ moduleData, onBack, onContact }) {
   )
 }
 
+function SolutionModuleRoute({ onBack, onContact, detailedModules }) {
+  const { id } = useParams()
+  const activeModule = detailedModules.find((m) => m.id === id) || detailedModules[0]
+  return (
+    <ModuleDetailPage
+      moduleData={activeModule}
+      onBack={onBack}
+      onContact={onContact}
+    />
+  )
+}
+
 export default function App() {
+  const navigate = useNavigate()
+  const location = useLocation()
   const [ready, setReady] = useState(false)
   const [gridReady, setGridReady] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -804,108 +828,89 @@ export default function App() {
   const [lineTwo, setLineTwo] = useState('********************')
   const mosaicRef = useRef(null)
 
-  // Client-side Page Routing (Separate Pages for Solutions Modules & Auth)
-  const [authView, setAuthView] = useState(() => {
-    const hash = window.location.hash
-    if (hash === '#/login' || hash === '#/signin' || hash === '#login') return 'login'
-    if (hash === '#/signup' || hash === '#/register' || hash === '#signup') return 'signup'
+  // Authenticated Staff User Session State (Integrated after Login)
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('docmatrix-demo-session')
+      if (saved) return JSON.parse(saved)
+    } catch {}
     return null
   })
 
-  const [activeModuleId, setActiveModuleId] = useState(() => {
-    const hash = window.location.hash
-    if (hash.startsWith('#/solutions/')) {
-      const id = hash.replace('#/solutions/', '').split('?')[0].split('#')[0]
-      if (detailedModules.some((m) => m.id === id)) {
-        return id
-      }
-    }
-    return null
-  })
-
+  // Hash compatibility: support deep-linking via #/route if accessed
   useEffect(() => {
     const handleHash = () => {
       const hash = window.location.hash
-      if (hash === '#/login' || hash === '#/signin' || hash === '#login') {
-        setAuthView('login')
-        setActiveModuleId(null)
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-        return
+      if (hash.startsWith('#/')) {
+        const path = hash.slice(1)
+        navigate(path)
       }
-      if (hash === '#/signup' || hash === '#/register' || hash === '#signup') {
-        setAuthView('signup')
-        setActiveModuleId(null)
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-        return
-      }
-      setAuthView(null)
-
-      if (hash.startsWith('#/solutions/')) {
-        const id = hash.replace('#/solutions/', '').split('?')[0].split('#')[0]
-        if (detailedModules.some((m) => m.id === id)) {
-          setActiveModuleId(id)
-          window.scrollTo({ top: 0, behavior: 'smooth' })
-          return
-        }
-      }
-      setActiveModuleId(null)
     }
-
+    handleHash()
     window.addEventListener('hashchange', handleHash)
     return () => window.removeEventListener('hashchange', handleHash)
-  }, [])
+  }, [navigate])
 
-  const navigateToAuth = (view) => (e) => {
-    if (e) e.preventDefault()
-    window.location.hash = `#/${view}`
-    setAuthView(view)
-    setActiveModuleId(null)
+  const handleLoginSuccess = (user) => {
+    setCurrentUser(user)
+    try {
+      sessionStorage.setItem('docmatrix-demo-session', JSON.stringify(user))
+    } catch {}
+    navigate('/dashboard')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const backToHomeFromAuth = (e) => {
+  const handleLogout = () => {
+    setCurrentUser(null)
+    try {
+      sessionStorage.removeItem('docmatrix-demo-session')
+    } catch {}
+    navigate('/')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const navigateToAuth = (view) => (e) => {
     if (e) e.preventDefault()
-    window.location.hash = '#home'
-    setAuthView(null)
-    setActiveModuleId(null)
+    navigate(`/${view}`)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const openModulePage = (id) => (e) => {
     if (e) e.preventDefault()
-    window.location.hash = `#/solutions/${id}`
-    setActiveModuleId(id)
-    setAuthView(null)
+    const areaMap = {
+      records: '/patients',
+      appointments: '/appointments',
+      clinical: '/clinical',
+      billing: '/billing',
+      inventory: '/inventory',
+      engagement: '/whatsapp'
+    }
+    const target = areaMap[id] || `/solutions/${id}`
+    navigate(target)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const backToHomeSolutions = (e) => {
+  const smoothScroll = (id) => (e) => {
     if (e) e.preventDefault()
-    window.location.hash = '#solutions'
-    setActiveModuleId(null)
-    setAuthView(null)
-    setTimeout(() => {
-      const el = document.getElementById('solutions')
-      if (el) el.scrollIntoView({ behavior: 'smooth' })
-    }, 60)
-  }
-
-  const goToContact = (e) => {
-    if (e) e.preventDefault()
-    window.location.hash = '#contact'
-    setActiveModuleId(null)
-    setAuthView(null)
-    setTimeout(() => {
-      const el = document.getElementById('contact')
-      if (el) el.scrollIntoView({ behavior: 'smooth' })
-    }, 60)
+    setMobileOpen(false)
+    if (location.pathname !== '/') {
+      navigate('/#' + id)
+      setTimeout(() => {
+        const el = document.getElementById(id)
+        if (el) el.scrollIntoView({ behavior: 'smooth' })
+      }, 100)
+      return
+    }
+    const el = document.getElementById(id)
+    if (el) {
+      const topOffset = el.getBoundingClientRect().top + window.pageYOffset - 40
+      window.scrollTo({ top: topOffset, behavior: 'smooth' })
+    }
   }
 
   useEffect(() => {
-    // Skip homepage initialization when a module or auth page is active
-    if (activeModuleId || authView) return
+    if (location.pathname !== '/') return
 
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const start = window.setTimeout(() => setReady(true), 40)
 
     // Progressive Scramble Headline Animation
@@ -976,45 +981,57 @@ export default function App() {
       observer.disconnect()
       rvObserver.disconnect()
     }
-  }, [activeModuleId, authView])
-
-  const smoothScroll = (id) => (e) => {
-    e.preventDefault()
-    setMobileOpen(false)
-    const el = document.getElementById(id)
-    if (el) {
-      const topOffset = el.getBoundingClientRect().top + window.pageYOffset - 40
-      window.scrollTo({ top: topOffset, behavior: 'smooth' })
-    }
-  }
-
-  if (authView) {
-    return (
-      <AuthPage
-        view={authView}
-        onNavigate={(nextView) => {
-          window.location.hash = `#/${nextView}`
-          setAuthView(nextView)
-          window.scrollTo({ top: 0, behavior: 'smooth' })
-        }}
-        onBackHome={backToHomeFromAuth}
-      />
-    )
-  }
-
-  if (activeModuleId) {
-    const activeModule = detailedModules.find((m) => m.id === activeModuleId) || detailedModules[0]
-    return (
-      <ModuleDetailPage
-        moduleData={activeModule}
-        onBack={backToHomeSolutions}
-        onContact={goToContact}
-      />
-    )
-  }
+  }, [location.pathname])
 
   return (
-    <main id="top" className={`page-container ${ready ? 'is-ready' : ''}`}>
+    <div className="docmatrix-app-root">
+      <DemoBanner />
+      <AppRoutes
+        currentUser={currentUser}
+        onLoginSuccess={handleLoginSuccess}
+        onLogout={handleLogout}
+        renderLandingPage={(view) => {
+          if (view === 'login' || view === 'signup') {
+            return (
+              <AuthPage
+                view={view}
+                onNavigate={(nextView) => {
+                  navigate(`/${nextView}`)
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                onBackHome={() => {
+                  navigate('/')
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                onLoginSuccess={handleLoginSuccess}
+              />
+            )
+          }
+
+          if (view === 'solution') {
+            return (
+              <SolutionModuleRoute
+                onBack={() => {
+                  navigate('/')
+                  setTimeout(() => {
+                    const el = document.getElementById('solutions')
+                    if (el) el.scrollIntoView({ behavior: 'smooth' })
+                  }, 60)
+                }}
+                onContact={() => {
+                  navigate('/')
+                  setTimeout(() => {
+                    const el = document.getElementById('contact')
+                    if (el) el.scrollIntoView({ behavior: 'smooth' })
+                  }, 60)
+                }}
+                detailedModules={detailedModules}
+              />
+            )
+          }
+
+          return (
+            <main id="top" className={`page-container ${ready ? 'is-ready' : ''}`}>
       {/* ===================================================================
           SECTION 1 — FULLSCREEN ANIMATED HERO
           =================================================================== */}
@@ -1552,5 +1569,10 @@ export default function App() {
         </div>
       </footer>
     </main>
+          )
+        }}
+      />
+    </div>
   )
 }
+
