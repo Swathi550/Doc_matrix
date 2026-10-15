@@ -985,7 +985,7 @@ export default function App() {
 
   return (
     <div className="docmatrix-app-root">
-      <DemoBanner />
+      {location.pathname !== '/' && <DemoBanner />}
       <AppRoutes
         currentUser={currentUser}
         onLoginSuccess={handleLoginSuccess}

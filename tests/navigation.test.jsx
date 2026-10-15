@@ -16,9 +16,18 @@ describe('DocMatrix Navigation & Architecture Validation', () => {
     window.location.hash = ''
   })
 
-  it('renders permanent DemoBanner on top of every page', () => {
-    render(
+  it('does NOT render DemoBanner on landing page, but renders on staff/feature pages', () => {
+    const { unmount } = render(
       <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    )
+
+    expect(screen.queryByTestId('demo-banner')).toBeNull()
+    unmount()
+
+    render(
+      <MemoryRouter initialEntries={['/appointments']}>
         <App />
       </MemoryRouter>
     )
