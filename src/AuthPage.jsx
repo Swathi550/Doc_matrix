@@ -6,13 +6,17 @@ import {
 } from 'lucide-react'
 
 // DocMatrix Brand Cross Mark
-function MedicalCrossMark({ light = false }) {
+function MedicalCrossMark({ light = false, size = 30, className = '' }) {
   return (
-    <span className={`medical-cross-mark ${light ? 'mark-light' : ''}`} aria-hidden="true">
-      <i />
-      <i />
-      <i />
-      <i />
+    <span className={`brand-mark-wrap ${light ? 'mark-light' : ''} ${className}`} aria-hidden="true">
+      <img
+        src={light ? '/logo-icon-light.png' : '/logo-icon.png'}
+        alt=""
+        width={size}
+        height={size}
+        className="brand-mark-img"
+        loading="eager"
+      />
     </span>
   )
 }
@@ -211,8 +215,14 @@ export default function AuthPage({ view = 'login', onNavigate, onBackHome }) {
                 className="auth-brand-anchor"
                 aria-label="DocMatrix Home"
               >
-                <MedicalCrossMark light={true} />
-                <span className="auth-brand-name">DOC MATRIX</span>
+                <MedicalCrossMark light={true} size={32} />
+                <img
+                  src="/logo-name-light.png"
+                  alt="DOC MATRIX"
+                  className="brand-name-img auth-brand-name-img"
+                  height="20"
+                  loading="eager"
+                />
               </a>
               <span className="auth-suite-badge">CLINIC PRACTICE SUITE</span>
             </header>
@@ -333,8 +343,14 @@ export default function AuthPage({ view = 'login', onNavigate, onBackHome }) {
           <div className="auth-form-container">
             {/* Mobile Branding (Visible only on small viewports) */}
             <div className="auth-mobile-brand">
-              <MedicalCrossMark />
-              <span className="brand-title">DOC MATRIX</span>
+              <MedicalCrossMark size={28} />
+              <img
+                src="/logo-name.png"
+                alt="DOC MATRIX"
+                className="brand-name-img auth-brand-name-img"
+                height="18"
+                loading="eager"
+              />
             </div>
 
             {/* Form Header */}
@@ -770,7 +786,7 @@ export default function AuthPage({ view = 'login', onNavigate, onBackHome }) {
           >
             <div className="auth-modal-header">
               <div className="auth-modal-title-group">
-                <MedicalCrossMark />
+                <MedicalCrossMark size={24} />
                 <h3 className="auth-modal-title">
                   {modalType === 'forgot' && 'Reset Clinic Password'}
                   {modalType === 'terms' && 'DocMatrix Terms of Service'}

@@ -394,22 +394,35 @@ const why = [
 
 const nodes = ['Patient', 'Doctor', 'Management', 'Lab', 'Pharmacy', 'Omnichannel']
 
-function MedicalCrossMark({ light = false }) {
+function MedicalCrossMark({ light = false, size = 32, className = '' }) {
   return (
-    <span className={`medical-cross-mark ${light ? 'mark-light' : ''}`} aria-hidden="true">
-      <i />
-      <i />
-      <i />
-      <i />
+    <span className={`brand-mark-wrap ${light ? 'mark-light' : ''} ${className}`} aria-hidden="true">
+      <img
+        src={light ? '/logo-icon-light.png' : '/logo-icon.png'}
+        alt=""
+        width={size}
+        height={size}
+        className="brand-mark-img"
+        loading="eager"
+      />
     </span>
   )
 }
 
 function Brand({ light = false }) {
   return (
-    <a className="brand-anchor" href="#top" aria-label="DOC MATRIX Home">
-      <MedicalCrossMark light={light} />
-      <span className="brand-title">DOC MATRIX</span>
+    <a className={`brand-anchor ${light ? 'brand-light' : ''}`} href="#top" aria-label="DOC MATRIX Home">
+      <MedicalCrossMark light={light} size={32} />
+      <span className="brand-title-wrap">
+        <img
+          src={light ? '/logo-name-light.png' : '/logo-name.png'}
+          alt="DOC MATRIX"
+          className="brand-name-img"
+          height="19"
+          loading="eager"
+        />
+        <span className="brand-title-fallback">DOC MATRIX</span>
+      </span>
     </a>
   )
 }
@@ -678,8 +691,14 @@ function ModuleDetailPage({ moduleData, onBack, onContact }) {
         <div className="wrap module-page-header-wrap">
           <div className="module-header-left">
             <button onClick={onBack} className="module-brand-btn" aria-label="Return to DocMatrix Home">
-              <MedicalCrossMark />
-              <span className="brand-title">DOC MATRIX</span>
+              <MedicalCrossMark size={28} />
+              <img
+                src="/logo-name.png"
+                alt="DOC MATRIX"
+                className="brand-name-img"
+                height="17"
+                loading="eager"
+              />
             </button>
             <span className="module-breadcrumb-sep">/</span>
             <button onClick={onBack} className="module-breadcrumb-link">Solutions</button>

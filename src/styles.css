@@ -132,32 +132,71 @@ img {
   letter-spacing: -0.015em;
 }
 
-/* Geometric Medical Cross Mark */
+/* Official DocMatrix Brand Mark & Wordmark Styles */
+.brand-mark-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.brand-mark-img {
+  display: block;
+  width: auto;
+  height: 32px;
+  object-fit: contain;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s ease;
+}
+
+.brand-anchor:hover .brand-mark-img {
+  transform: scale(1.06);
+}
+
+.brand-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.brand-name-img {
+  display: block;
+  height: 20px;
+  width: auto;
+  object-fit: contain;
+  transition: opacity 0.2s ease;
+}
+
+.brand-title-fallback {
+  display: none;
+}
+
+.brand-anchor.brand-light,
+.brand-light {
+  color: #ffffff;
+}
+
+@media (max-width: 640px) {
+  .brand-mark-img {
+    height: 26px;
+  }
+  .brand-name-img {
+    height: 16px;
+  }
+  .brand-anchor {
+    gap: 8px;
+  }
+}
+
+/* Backwards compatibility for any .medical-cross-mark reference */
 .medical-cross-mark {
   position: relative;
-  display: inline-block;
-  width: 22px;
-  height: 22px;
-  flex: 0 0 22px;
-}
-
-.medical-cross-mark i {
-  position: absolute;
-  top: 10px;
-  left: 1px;
-  width: 20px;
-  height: 2.2px;
-  border-radius: 3px;
-  background: var(--teal-primary);
-  transform-origin: 50% 50%;
-}
-
-.medical-cross-mark i:nth-child(2) { transform: rotate(45deg); }
-.medical-cross-mark i:nth-child(3) { transform: rotate(90deg); }
-.medical-cross-mark i:nth-child(4) { transform: rotate(135deg); }
-
-.medical-cross-mark.mark-light i {
-  background: var(--teal-glow);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: auto;
 }
 
 .topbar nav,
