@@ -1048,7 +1048,7 @@ export default function App() {
 
           <div className="topbar-auth-group">
             <a
-              href="#/login"
+              href="/login"
               onClick={navigateToAuth('login')}
               className="btn-auth-signin"
               aria-label="Clinic Login"
@@ -1057,7 +1057,7 @@ export default function App() {
               <span>Login</span>
             </a>
             <a
-              href="#/signup"
+              href="/signup"
               onClick={navigateToAuth('signup')}
               className="btn-auth-signup"
               aria-label="Clinic Sign Up"
@@ -1397,8 +1397,11 @@ export default function App() {
                           <div className="plan-price">{plan.price}</div>
                           <p className="plan-billing">{plan.billing}</p>
                           <a
-                            href="#contact"
-                            onClick={smoothScroll('contact')}
+                            href={`/not-built-yet?button=${encodeURIComponent(plan.name + ' Plan')}`}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              navigate(`/not-built-yet?button=${encodeURIComponent(plan.name + ' Plan')}`)
+                            }}
                             className={`plan-cta-btn ${
                               plan.featured ? 'btn-teal-primary' : 'btn-outline-white'
                             }`}
@@ -1534,20 +1537,20 @@ export default function App() {
           <div className="footer-nav-columns">
             <div className="footer-col">
               <h4>Platform</h4>
-              <a href="#about" onClick={smoothScroll('about')}>About Us</a>
+              <a href="/not-built-yet?button=About%20Us" onClick={(e) => { e.preventDefault(); navigate('/not-built-yet?button=About%20Us') }}>About Us</a>
               <a href="#solutions" onClick={smoothScroll('solutions')}>Solutions</a>
-              <a href="#/login" onClick={navigateToAuth('login')}>Login</a>
-              <a href="#/signup" onClick={navigateToAuth('signup')}>Sign Up</a>
+              <a href="/login" onClick={navigateToAuth('login')}>Login</a>
+              <a href="/signup" onClick={navigateToAuth('signup')}>Sign Up</a>
             </div>
 
             <div className="footer-col">
               <h4>Solutions</h4>
-              <a href="#/solutions/records" onClick={openModulePage('records')}>Patient Records & Dental Care</a>
-              <a href="#/solutions/appointments" onClick={openModulePage('appointments')}>Appointments & Operations</a>
-              <a href="#/solutions/clinical" onClick={openModulePage('clinical')}>Clinical Workflows & Rx</a>
-              <a href="#/solutions/billing" onClick={openModulePage('billing')}>Billing, Accounts & Tally</a>
-              <a href="#/solutions/inventory" onClick={openModulePage('inventory')}>Inventory & Dental Lab</a>
-              <a href="#/solutions/engagement" onClick={openModulePage('engagement')}>WhatsApp & Engagement</a>
+              <a href="/patients" onClick={openModulePage('records')}>Patient Records & Dental Care</a>
+              <a href="/appointments" onClick={openModulePage('appointments')}>Appointments & Operations</a>
+              <a href="/clinical" onClick={openModulePage('clinical')}>Clinical Workflows & Rx</a>
+              <a href="/billing" onClick={openModulePage('billing')}>Billing, Accounts & Tally</a>
+              <a href="/inventory" onClick={openModulePage('inventory')}>Inventory & Dental Lab</a>
+              <a href="/whatsapp" onClick={openModulePage('engagement')}>WhatsApp & Engagement</a>
             </div>
 
             <div className="footer-col">
@@ -1562,9 +1565,9 @@ export default function App() {
         <div className="wrap footer-bottom-bar">
           <p>© {new Date().getFullYear()} DocMatrix Technologies. All rights reserved. Healthcare in Sync.</p>
           <div className="footer-legal">
-            <a href="#home" onClick={smoothScroll('home')}>Privacy Policy</a>
-            <a href="#home" onClick={smoothScroll('home')}>Terms of Service</a>
-            <a href="#home" onClick={smoothScroll('home')}>Security & HIPAA/ABDM Compliance</a>
+            <a href="/not-built-yet?button=Privacy%20Policy" onClick={(e) => { e.preventDefault(); navigate('/not-built-yet?button=Privacy%20Policy') }}>Privacy Policy</a>
+            <a href="/not-built-yet?button=Terms%20of%20Service" onClick={(e) => { e.preventDefault(); navigate('/not-built-yet?button=Terms%20of%20Service') }}>Terms of Service</a>
+            <a href="/not-built-yet?button=Security%20%26%20Compliance" onClick={(e) => { e.preventDefault(); navigate('/not-built-yet?button=Security%20%26%20Compliance') }}>Security & HIPAA/ABDM Compliance</a>
           </div>
         </div>
       </footer>

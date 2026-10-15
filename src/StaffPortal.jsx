@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Calendar, Users, Stethoscope, Receipt, BookOpen, Package, MessageSquare, Globe,
   BarChart3, Settings, LayoutDashboard, LogOut, User, Menu, X, ChevronRight, ChevronDown,
@@ -128,13 +129,11 @@ export default function StaffPortal({
   onLogout,
   onReturnToWebsite
 }) {
+  const navigate = useNavigate()
+  const location = useLocation()
   const [currentUser, setCurrentUser] = useState(user)
   const [activeRoute, setActiveRoute] = useState(() => {
-    const hash = typeof window !== 'undefined' ? window.location.hash.replace(/^#/, '') : ''
-    if (hash && hash !== '/login' && hash !== '/signup' && hash !== 'home' && hash !== 'top') {
-      return hash
-    }
-    return '/dashboard'
+    return location.pathname && location.pathname !== '/' ? location.pathname : '/dashboard'
   })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [lang, setLang] = useState('en')
@@ -161,19 +160,14 @@ export default function StaffPortal({
 
   // Keep route synced with browser address bar
   useEffect(() => {
-    const handleHashSync = () => {
-      const hash = window.location.hash.replace(/^#/, '')
-      if (hash && hash !== '/login' && hash !== '/signup' && hash !== 'home' && hash !== 'top') {
-        setActiveRoute(hash)
-      }
+    if (location.pathname && location.pathname !== '/login' && location.pathname !== '/signup') {
+      setActiveRoute(location.pathname)
     }
-    window.addEventListener('hashchange', handleHashSync)
-    return () => window.removeEventListener('hashchange', handleHashSync)
-  }, [])
+  }, [location.pathname])
 
   const navigateTo = (route) => {
     setActiveRoute(route)
-    window.location.hash = `#${route}`
+    navigate(route)
     setMobileMenuOpen(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
