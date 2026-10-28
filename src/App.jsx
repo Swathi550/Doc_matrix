@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Menu, X, ArrowRight, ArrowLeft, Check, UserRound, Stethoscope, Building2, FlaskConical, Pill,
-  MessagesSquare, CalendarCheck, LogIn, ClipboardCheck, ListOrdered, FileText, CreditCard,
+  MessagesSquare, CalendarCheck, LogIn, ClipboardCheck, FileText, CreditCard,
   Repeat, Bell, BarChart3, ShieldCheck, LayoutDashboard, Plug, FolderHeart, HeartPulse, Layers,
   Eye, Gauge, Network, Share2, Radio, CalendarClock, ChevronDown, ChevronRight, Activity, Sparkles,
   Play, Pause, Zap, CheckCircle2, RotateCcw, Package, MessageCircle, Receipt
@@ -11,7 +11,9 @@ import AuthPage from './AuthPage'
 import StaffPortal from './StaffPortal'
 import AppRoutes from './routes/appRoutes'
 import DemoBanner from './components/DemoBanner'
+import WhatsAppShortcut from './components/WhatsAppShortcut'
 import { findDemoUserById, DEMO_USERS } from './mocks/auth'
+import { getCurrentUser, logout as authLogout } from './services/authService'
 
 export function getSafeNextPath(rawNext) {
   if (!rawNext) return '/dashboard'
@@ -87,7 +89,7 @@ const solutions = [
     id: 'appointments',
     icon: CalendarCheck,
     title: 'Appointments & Clinic Operations',
-    desc: 'Manage doctor availability, real-time appointments, walk-ins, live queues, waiting times, rescheduling, cancellations, and pending treatments from one workspace.',
+    desc: 'Manage doctor availability, appointment schedules, bookings, rescheduling, cancellations, and pending treatments from one workspace.',
     color: '#0A9EAD'
   },
   {
@@ -147,23 +149,20 @@ const detailedModules = [
   },
   {
     id: 'appointments',
-    staffRoute: '/appointments/queue',
+    staffRoute: '/appointments/new',
     number: '02',
     name: 'Appointments & Clinic Operations',
-    headline: 'Smart scheduling, live queue tracking, and zero waiting-room confusion.',
-    intro: 'Coordinate appointments, doctor availability, patient queues, and daily clinic activity from one synchronized operational workspace.',
-    benefit: 'Keeps reception running smoothly, slashes patient waiting times, maximizes chair productivity, and prevents uncompleted treatments from being overlooked.',
+    headline: 'Smart scheduling and clear appointment coordination.',
+    intro: 'Coordinate appointments, doctor availability, and daily clinic activity from one synchronized operational workspace.',
+    benefit: 'Keeps reception organised, maximizes chair productivity, and prevents uncompleted treatments from being overlooked.',
     image: '/card-clinic-operations.jpg',
-    imageAlt: 'DocMatrix Live Clinic Queue & Multi-Doctor Schedule',
-    imageBadge: 'Live Queue • 5 Stages Tracked',
+    imageAlt: 'DocMatrix Multi-Doctor Appointment Calendar',
+    imageBadge: 'Appointment Calendar',
     features: [
       { name: 'Smart scheduling', desc: 'Book appointments using actual clinic operating hours, operatory availability, and doctor rosters.' },
-      { name: 'Calendar views', desc: 'View appointments by day, week, and doctor, with instant filtering for specialties and statuses.' },
-      { name: 'Live patient queue', desc: 'Track patients through Scheduled, Arrived, Waiting, In Consultation, and Completed stages.' },
-      { name: 'Walk-in management', desc: 'Register walk-in patients in seconds and manage their place in the active queue without disruption.' },
+      { name: 'Daily schedule', desc: 'See the selected day’s appointments beside available booking times.' },
       { name: 'Rescheduling and cancellations', desc: 'Record slot changes and mandatory cancellation reasons for practice audit trails.' },
       { name: 'No-show management', desc: 'Identify missed appointments automatically and maintain a follow-up list of incomplete online booking enquiries.' },
-      { name: 'Waiting-room timer', desc: 'Monitor how long patients have been waiting with real-time indicators alerting front desk staff.' },
       { name: 'Pending treatments', desc: 'Surface unfinished treatments from previous visits automatically as soon as the patient returns.' },
       { name: 'Multi-branch operations', desc: 'Support multiple clinic branches, cross-facility schedules, and centralized permissions under one login.', status: 'Coming soon' }
     ]
@@ -269,7 +268,6 @@ const detailedModules = [
 const features = [
   [CalendarClock, 'Appointment Management'],
   [LogIn, 'Digital Check-in'],
-  [ListOrdered, 'Smart Queue'],
   [FolderHeart, 'Patient Records'],
   [FileText, 'Digital Prescription'],
   [FlaskConical, 'Lab Reports'],
@@ -340,10 +338,6 @@ const comparisonFeatures = [
     entitlements: { free: '1 Login', starter: 'Up to 3', pro: 'Unlimited', enterprise: 'Unlimited' }
   },
   {
-    name: 'Live patient queues',
-    entitlements: { free: true, starter: true, pro: true, enterprise: true }
-  },
-  {
     name: 'WhatsApp reminders',
     entitlements: { free: false, starter: 'Add-on', pro: 'Add-on', enterprise: 'Included' }
   },
@@ -411,13 +405,11 @@ function PlanEntitlement({ val, isFeatured }) {
 const why = [
   [Layers, 'Unified Healthcare Operations', 'Front desk, clinical, lab and pharmacy teams work from the same live picture.'],
   [Share2, 'Connected Patient Journey', 'Every step of a visit hands off cleanly to the next, with nothing re-entered.'],
-  [Eye, 'Workflow Visibility', 'See where each patient is, what is pending and where queues are building.'],
+  [Eye, 'Workflow Visibility', 'See where each patient is and what is pending across the clinic.'],
   [Network, 'Scalable Healthcare Platform', 'Start with one clinic and extend to departments, sites and partner networks.'],
   [Radio, 'Multi-Channel Communication', 'Reach patients and staff through the channels that fit each situation.'],
   [Gauge, 'Operational Insights', 'Turn daily activity into reports that help leaders plan capacity and service.']
 ]
-
-const nodes = ['Patient', 'Doctor', 'Management', 'Lab', 'Pharmacy', 'Omnichannel']
 
 function MedicalCrossMark({ light = false }) {
   return (
@@ -504,53 +496,6 @@ function DoctorPill({ name, role, avatar }) {
         <b>{name}</b>
         <small>{role}</small>
       </span>
-    </div>
-  )
-}
-
-function EcosystemHub() {
-  const pts = nodes.map((n, i) => {
-    const a = (-90 + 60 * i) * Math.PI / 180
-    return [n, 280 + 190 * Math.cos(a), 280 + 190 * Math.sin(a)]
-  })
-
-  return (
-    <div className="eco-hub-container">
-      <svg className="eco-hub-svg" viewBox="0 0 560 560" role="img" aria-label="Doc Matrix ecosystem connecting patient, doctor, management, lab, pharmacy, and omnichannel channels">
-        <defs>
-          <radialGradient id="hubGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#008891" stopOpacity="0.16" />
-            <stop offset="100%" stopColor="#008891" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-
-        <circle cx="280" cy="280" r="260" fill="url(#hubGlow)" />
-        <circle cx="280" cy="280" r="190" className="hub-track" />
-        <circle cx="280" cy="280" r="105" className="hub-track inner" />
-
-        {pts.map(([n, x, y], i) => {
-          const [, nx, ny] = pts[(i + 1) % 6]
-          return <line key={'line-' + n} className="hub-connect" x1={x} y1={y} x2={nx} y2={ny} />
-        })}
-
-        {pts.map(([n, x, y]) => (
-          <line key={'spoke-' + n} className="hub-spoke" x1="280" y1="280" x2={x} y2={y} />
-        ))}
-
-        {pts.map(([n, x, y]) => (
-          <g key={'node-' + n} className="hub-node-group">
-            <circle cx={x} cy={y} r="32" className="hub-node-outer" />
-            <circle cx={x} cy={y} r="6" fill="#008891" />
-            <text x={x} y={y + (y > 280 ? 52 : -42)} textAnchor="middle" className="hub-node-label">
-              {n}
-            </text>
-          </g>
-        ))}
-
-        <circle cx="280" cy="280" r="54" className="hub-core-circle" />
-        <text x="280" y="275" textAnchor="middle" className="hub-core-brand">DOC</text>
-        <text x="280" y="297" textAnchor="middle" className="hub-core-sub">MATRIX</text>
-      </svg>
     </div>
   )
 }
@@ -843,9 +788,12 @@ export default function App() {
   const [lineTwo, setLineTwo] = useState('********************')
   const mosaicRef = useRef(null)
 
-  // Authenticated Staff User Session State (Holds ONLY user ID in sessionStorage)
+  // Authenticated Staff User Session State (Holds user in state, checks both authService and sessionStorage)
   const [currentUser, setCurrentUser] = useState(() => {
     try {
+      const authUser = getCurrentUser()
+      if (authUser) return authUser
+
       const saved = sessionStorage.getItem('docmatrix-demo-session')
       if (saved) {
         if (saved.startsWith('{')) {
@@ -893,6 +841,7 @@ export default function App() {
 
   const handleLogout = () => {
     setCurrentUser(null)
+    authLogout()
     try {
       sessionStorage.removeItem('docmatrix-demo-session')
     } catch {}
@@ -1186,7 +1135,7 @@ export default function App() {
                 <p>SMART CLINIC OPERATIONS</p>
                 <strong>Effortless Clinic Operations</strong>
                 <span>
-                  Coordinate appointments, live patient queues, doctor availability, WhatsApp reminders, recall notifications, and inventory alerts in one connected workflow.
+                  Coordinate appointments, doctor availability, WhatsApp reminders, recall notifications, and inventory alerts in one connected workflow.
                 </span>
               </div>
             </article>
@@ -1291,7 +1240,7 @@ export default function App() {
                 <span className="card-heading-accent">Effortless Clinic Operations</span>
               </h3>
               <p className="card-desc">
-                <span className="card-key-phrase">Real-time appointments</span>, live queues, automated WhatsApp reminders, recall notifications, and connected{' '}
+                <span className="card-key-phrase">Real-time appointments</span>, automated WhatsApp reminders, recall notifications, and connected{' '}
                 <span className="card-key-phrase">inventory management</span>.
               </p>
             </div>
@@ -1378,24 +1327,7 @@ export default function App() {
         </div>
       </section>
 
-      {/* Section 7: Ecosystem Interactive Hub */}
-      <section id="ecosystem" className="section-padded bg-white">
-        <div className="wrap">
-          <div className="section-head rv">
-            <span className="section-kicker">ECOSYSTEM ARCHITECTURE</span>
-            <h2 className="section-title">One central nervous system for your clinic.</h2>
-            <p className="section-lead">
-              All healthcare stakeholders connect into a single synchronized platform with real-time state sharing.
-            </p>
-          </div>
-
-          <div className="rv">
-            <EcosystemHub />
-          </div>
-        </div>
-      </section>
-
-      {/* Section 8: Packages & Pricing Comparison */}
+      {/* Section 7: Packages & Pricing Comparison */}
       <section id="packages" className="section-padded bg-soft">
         <div className="wrap">
           <div className="section-head rv">
@@ -1502,7 +1434,7 @@ export default function App() {
             <span className="section-kicker light">READY TO CONNECT?</span>
             <h2 className="contact-headline">Schedule a personalized platform walkthrough.</h2>
             <p className="contact-lead">
-              See how DocMatrix organizes records, reduces queue bottlenecks, and brings your clinical staff into sync.
+              See how DocMatrix organizes records and brings your clinical staff into sync.
             </p>
             <div className="contact-metrics">
               <div>
@@ -1606,6 +1538,7 @@ export default function App() {
           )
         }}
       />
+      <WhatsAppShortcut />
     </div>
   )
 }

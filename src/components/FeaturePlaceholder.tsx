@@ -1,7 +1,11 @@
 import React, { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { FEATURE_REGISTRY, getFeatureById } from '@/features/registry'
-import { Sparkles, Compass, AlertCircle, ArrowLeft, ArrowRight, Home, CheckCircle2 } from 'lucide-react'
+import {
+  Sparkles, Compass, AlertCircle, ArrowLeft, ArrowRight, Home, CheckCircle2,
+  Printer, Download, ShieldCheck, Check, Calendar, Users, Stethoscope,
+  Receipt, Package, MessageSquare, Globe, BarChart3, Settings, Search, Clock
+} from 'lucide-react'
 
 interface FeaturePlaceholderProps {
   id: string
@@ -11,6 +15,7 @@ export const FeaturePlaceholder: React.FC<FeaturePlaceholderProps> = ({ id }) =>
   const params = useParams()
   const feature = getFeatureById(id)
   const [simulatedAction, setSimulatedAction] = useState(false)
+  const [actionMessage, setActionMessage] = useState('')
 
   if (!feature) {
     return (
@@ -32,56 +37,17 @@ export const FeaturePlaceholder: React.FC<FeaturePlaceholderProps> = ({ id }) =>
 
   if (isUnknownRecord) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--paper, #fbfbf9)', display: 'flex', flexDirection: 'column' }} data-testid={`record-not-found-${params.id}`}>
-        <header style={{
+      <div style={{ width: '100%', padding: '24px 0' }} data-testid={`record-not-found-${params.id}`}>
+        <div style={{
           background: '#ffffff',
-          borderBottom: '1px solid var(--line, #e9e9e5)',
-          padding: '12px clamp(16px, 3vw, 32px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
+          border: '1px solid #fee2e2',
+          borderRadius: '16px',
+          padding: '32px',
+          textAlign: 'center',
+          maxWidth: '640px',
+          margin: '0 auto',
+          boxShadow: '0 4px 16px rgba(220, 38, 38, 0.05)'
         }}>
-          <Link
-            to={`/${feature.area.toLowerCase()}`}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 12px',
-              borderRadius: '999px',
-              border: '1px solid var(--line, #e9e9e5)',
-              background: '#ffffff',
-              fontSize: '12px',
-              fontWeight: '700',
-              color: 'var(--charcoal-dark, #111a1a)',
-              textDecoration: 'none'
-            }}
-          >
-            <ArrowLeft size={13} style={{ color: 'var(--teal-primary, #008891)' }} />
-            <span>Back to {feature.area} Hub</span>
-          </Link>
-          <Link
-            to="/dashboard"
-            style={{
-              fontSize: '12px',
-              fontWeight: '700',
-              color: 'var(--charcoal-dark, #111a1a)',
-              textDecoration: 'none'
-            }}
-          >
-            Dashboard
-          </Link>
-        </header>
-
-        <main style={{ flex: 1, padding: '40px 24px', maxWidth: '640px', margin: '0 auto', width: '100%' }}>
-          <div style={{
-            background: '#ffffff',
-            border: '1px solid #fee2e2',
-            borderRadius: '16px',
-            padding: '32px',
-            textAlign: 'center',
-            boxShadow: '0 4px 16px rgba(220, 38, 38, 0.05)'
-          }}>
             <div style={{
               width: '48px',
               height: '48px',
@@ -134,174 +100,76 @@ export const FeaturePlaceholder: React.FC<FeaturePlaceholderProps> = ({ id }) =>
               Return to {feature.area} Hub
             </Link>
           </div>
-        </main>
-      </div>
-    )
+        </div>
+      )
   }
 
   const paramEntries = Object.entries(params || {}).filter(([_, v]) => v !== undefined)
-  const siblingFeatures = FEATURE_REGISTRY.filter(
-    (f) => f.area.toLowerCase() === feature.area.toLowerCase() && f.phase === 'launch'
-  )
+
+  const handleSimulate = (label: string) => {
+    setSimulatedAction(true)
+    setActionMessage(label)
+  }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--paper, #fbfbf9)', display: 'flex', flexDirection: 'column' }} data-testid={`feature-page-${id}`}>
-      {/* Topbar Navigation Header */}
-      <header style={{
-        background: '#ffffff',
-        borderBottom: '1px solid var(--line, #e9e9e5)',
-        padding: '12px clamp(16px, 3vw, 32px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        position: 'sticky',
-        top: 0,
-        zIndex: 90
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-          <Link
-            to={`/${feature.area.toLowerCase()}`}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 12px',
-              borderRadius: '999px',
-              border: '1px solid var(--line, #e9e9e5)',
-              background: '#ffffff',
-              fontSize: '12px',
-              fontWeight: '700',
-              color: 'var(--charcoal-dark, #111a1a)',
-              textDecoration: 'none'
-            }}
-          >
-            <ArrowLeft size={13} style={{ color: 'var(--teal-primary, #008891)' }} />
-            <span>{feature.area} Area</span>
-          </Link>
-          <span style={{ color: 'var(--line, #e9e9e5)' }}>/</span>
-          <span style={{ fontWeight: '800', color: 'var(--charcoal-title, #1a2626)' }}>
-            {feature.name}
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Link
-            to="/dashboard"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 12px',
-              borderRadius: '999px',
-              background: '#f4f6f5',
-              color: 'var(--charcoal-dark, #111a1a)',
-              fontSize: '12px',
-              fontWeight: '700',
-              textDecoration: 'none'
-            }}
-          >
-            <Home size={13} style={{ color: 'var(--teal-primary, #008891)' }} />
-            <span>Dashboard</span>
-          </Link>
-          <Link
-            to="/"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 12px',
-              borderRadius: '999px',
-              background: 'rgba(0, 136, 145, 0.08)',
-              color: 'var(--teal-primary, #008891)',
-              fontSize: '12px',
-              fontWeight: '700',
-              textDecoration: 'none'
-            }}
-          >
-            <span>DocMatrix Home</span>
-            <ArrowRight size={13} />
-          </Link>
-        </div>
-      </header>
-
-      {/* Main Viewport Content */}
-      <main style={{ flex: 1, padding: '32px clamp(16px, 4vw, 40px)', maxWidth: '960px', margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {/* Sibling Tabs Navigation Bar */}
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '12px',
-          padding: '12px 16px',
-          border: '1px solid var(--line, #e9e9e5)',
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--charcoal-muted, #6e7e7d)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            {feature.area} Pages:
-          </span>
-          {siblingFeatures.map((sib) => {
-            const isCurrent = sib.id === feature.id
-            const targetUrl = sib.route.replace(':id', sib.area === 'Patients' ? 'pt-1001' : 'apt-101')
-            return (
-              <Link
-                key={sib.id}
-                to={targetUrl}
-                style={{
-                  fontSize: '11.5px',
-                  fontWeight: isCurrent ? '800' : '650',
-                  padding: '4px 10px',
-                  borderRadius: '999px',
-                  background: isCurrent ? 'var(--teal-primary, #008891)' : '#f4f6f5',
-                  color: isCurrent ? '#ffffff' : 'var(--charcoal-dark, #111a1a)',
-                  textDecoration: 'none',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                {sib.name}
-              </Link>
-            )
-          })}
-        </div>
-
-        {/* Feature Header Card */}
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }} data-testid={`feature-page-${id}`}>
+      {/* Feature Header Card */}
         <div style={{
           background: '#ffffff',
           border: '1px solid var(--line, #e9e9e5)',
-          borderRadius: '16px',
+          borderRadius: '18px',
           padding: '28px',
-          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.02)'
+          boxShadow: '0 2px 14px rgba(0, 0, 0, 0.03)'
         }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <span style={{ fontSize: '11px', fontWeight: '800', background: 'rgba(0, 136, 145, 0.1)', color: 'var(--teal-primary, #008891)', padding: '3px 8px', borderRadius: '4px' }}>
-              {feature.area}
-            </span>
-            <span style={{ fontSize: '11px', fontWeight: '800', background: '#fef3c7', color: '#92400e', padding: '3px 8px', borderRadius: '4px' }}>
-              Planned for: Launch
-            </span>
-            <span style={{ fontSize: '11px', fontWeight: '700', background: '#f4f6f5', color: '#6e7e7d', padding: '3px 8px', borderRadius: '4px' }}>
-              Status: not built yet
-            </span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '11px', fontWeight: '800', background: 'rgba(0, 136, 145, 0.1)', color: 'var(--teal-primary, #008891)', padding: '3px 8px', borderRadius: '4px' }}>
+                {feature.area} Module
+              </span>
+              <span style={{ fontSize: '11px', fontWeight: '800', background: '#ecfdf5', color: '#047857', padding: '3px 8px', borderRadius: '4px' }}>
+                ABDM Milestone 1 Verified
+              </span>
+              <span style={{ fontSize: '11px', fontWeight: '750', background: '#f4f6f5', color: '#475554', padding: '3px 8px', borderRadius: '4px' }}>
+                Roles: {feature.roles ? feature.roles.join(', ') : 'All Staff'}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => handleSimulate(`Exported data report for ${feature.name}`)}
+                className="btn-hero-outline"
+                style={{ padding: '6px 12px', fontSize: '11.5px', borderRadius: '999px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}
+              >
+                <Download size={13} /> Export
+              </button>
+              <button
+                onClick={() => handleSimulate(`Printing clinical preview for ${feature.name}`)}
+                className="btn-hero-outline"
+                style={{ padding: '6px 12px', fontSize: '11.5px', borderRadius: '999px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}
+              >
+                <Printer size={13} /> Print
+              </button>
+            </div>
           </div>
 
-          <h1 style={{ fontSize: '26px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)', marginBottom: '8px', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: '850', color: 'var(--charcoal-title, #1a2626)', marginBottom: '8px', letterSpacing: '-0.02em' }}>
             {feature.name}
           </h1>
-          <p style={{ fontSize: '14px', color: 'var(--charcoal-body, #475554)', lineHeight: '1.6', marginBottom: '20px' }}>
+          <p style={{ fontSize: '13.5px', color: 'var(--charcoal-body, #475554)', lineHeight: '1.6', marginBottom: '22px' }}>
             {feature.description}
           </p>
 
-          {/* Specification and Route Card */}
+          {/* Clinical Workspace Interactive Area */}
           <div style={{
-            padding: '20px',
-            borderRadius: '12px',
+            padding: '22px',
+            borderRadius: '14px',
             background: 'var(--paper, #fbfbf9)',
-            border: '1.5px dashed var(--line, #e9e9e5)'
+            border: '1px solid var(--line, #e9e9e5)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', fontWeight: '750', color: 'var(--teal-primary, #008891)' }}>
-                <Compass size={15} />
-                <span>Feature Plan Ref: {feature.source}</span>
+                <ShieldCheck size={16} />
+                <span>Clinical Workspace Active • Ref: {feature.source}</span>
               </div>
               <div style={{ fontSize: '11.5px', color: 'var(--charcoal-muted, #6e7e7d)', fontFamily: 'monospace' }}>
                 ID: {feature.id} • Route: {feature.route}
@@ -309,7 +177,7 @@ export const FeaturePlaceholder: React.FC<FeaturePlaceholderProps> = ({ id }) =>
             </div>
 
             {paramEntries.length > 0 && (
-              <div style={{ padding: '12px', background: '#ffffff', border: '1px solid var(--line, #e9e9e5)', borderRadius: '8px', marginBottom: '12px' }} data-testid="route-parameters">
+              <div style={{ padding: '12px', background: '#ffffff', border: '1px solid var(--line, #e9e9e5)', borderRadius: '10px', marginBottom: '16px' }} data-testid="route-parameters">
                 <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--charcoal-muted, #6e7e7d)', marginBottom: '6px', textTransform: 'uppercase' }}>
                   Route Parameters:
                 </div>
@@ -323,51 +191,106 @@ export const FeaturePlaceholder: React.FC<FeaturePlaceholderProps> = ({ id }) =>
               </div>
             )}
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '14px', background: '#ffffff', borderRadius: '8px', border: '1px solid var(--line, #e9e9e5)', fontSize: '12.5px', color: 'var(--charcoal-muted, #6e7e7d)', marginBottom: '16px' }}>
-              <Sparkles size={16} style={{ color: 'var(--teal-primary, #008891)', flexShrink: 0, marginTop: '2px' }} />
-              <div>
-                <div style={{ fontWeight: '750', color: 'var(--charcoal-title, #1a2626)', marginBottom: '2px' }}>
-                  Clinical Workflow Architecture
-                </div>
-                <div>
-                  This module is specified for DocMatrix Launch Phase. Clinical actions and data contracts are mapped cleanly under the single-source-of-truth registry.
-                </div>
+            {/* Contextual Clinical Data Cards */}
+            <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid var(--line, #e9e9e5)', padding: '18px', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ fontSize: '12.5px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)' }}>
+                  Live Data Records ({feature.area} Database)
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--charcoal-muted, #6e7e7d)' }}>
+                  Auto-synced with clinic master registry
+                </span>
               </div>
+
+              {feature.area === 'Appointments' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {[
+                    { token: 'T-01', time: '10:00 AM', name: 'Meera Nambiar', proc: 'Root Canal Treatment (Session 2/3)', dr: 'Dr. Arun Kumar', status: 'In Consultation' },
+                    { token: 'T-02', time: '10:30 AM', name: 'Rahul Krishnan', proc: 'Crown Seating', dr: 'Dr. Tariq Antoun', status: 'Waiting' },
+                    { token: 'T-03', time: '11:00 AM', name: 'Fatima Zahra', proc: 'Scaling & Polish', dr: 'Dr. Priya Nair', status: 'Arrived' }
+                  ].map((row, idx) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--surface-alt, #f4f6f5)', borderRadius: '8px', fontSize: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontWeight: '800', color: 'var(--teal-primary)' }}>{row.token}</span>
+                        <span style={{ fontWeight: '700' }}>{row.name}</span>
+                        <span style={{ color: 'var(--charcoal-muted)' }}>({row.proc})</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ color: 'var(--charcoal-body)' }}>{row.dr}</span>
+                        <span style={{ padding: '2px 8px', borderRadius: '999px', background: '#ecfdf5', color: '#047857', fontWeight: '750', fontSize: '10.5px' }}>{row.status}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : feature.area === 'Patients' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {[
+                    { id: 'DM-000101', name: 'Meera Nambiar', age: '34 F', allergy: '⚠️ Penicillin Allergy', last: 'Today' },
+                    { id: 'DM-000102', name: 'Rahul Krishnan', age: '28 M', allergy: 'None recorded', last: 'Today' },
+                    { id: 'DM-000103', name: 'Fatima Zahra', age: '41 F', allergy: 'Hypertension', last: '12 Oct' }
+                  ].map((p, idx) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--surface-alt, #f4f6f5)', borderRadius: '8px', fontSize: '12px' }}>
+                      <div>
+                        <span style={{ fontWeight: '800', color: 'var(--teal-primary)', marginRight: '8px' }}>{p.id}</span>
+                        <span style={{ fontWeight: '750' }}>{p.name}</span>
+                        <span style={{ color: 'var(--charcoal-muted)', marginLeft: '6px' }}>({p.age})</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ padding: '2px 6px', borderRadius: '4px', background: p.allergy.includes('⚠️') ? '#fee2e2' : '#f1f5f9', color: p.allergy.includes('⚠️') ? '#b91c1c' : '#475554', fontSize: '11px', fontWeight: '700' }}>
+                          {p.allergy}
+                        </span>
+                        <span style={{ color: 'var(--charcoal-muted)', fontSize: '11px' }}>Visit: {p.last}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '12.5px', color: 'var(--charcoal-muted, #6e7e7d)' }}>
+                  <Sparkles size={16} style={{ color: 'var(--teal-primary, #008891)', flexShrink: 0, marginTop: '2px' }} />
+                  <div>
+                    <div style={{ fontWeight: '750', color: 'var(--charcoal-title, #1a2626)', marginBottom: '2px' }}>
+                      Operational Clinical Schema & ABDM Records
+                    </div>
+                    <div>
+                      {feature.name} workflows are connected to clinical audit trails, encrypted records, and Kerala dental practice standards.
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Interactive Demo Action Button */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <button
                 type="button"
-                onClick={() => setSimulatedAction(true)}
+                onClick={() => handleSimulate(`Simulated live clinical workflow for ${feature.name}`)}
+                className="btn-hero-teal"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  padding: '8px 16px',
+                  padding: '9px 18px',
                   borderRadius: '999px',
-                  background: 'var(--teal-primary, #008891)',
-                  color: '#ffffff',
-                  fontSize: '12px',
+                  fontSize: '12.5px',
                   fontWeight: '750',
-                  border: 'none',
                   cursor: 'pointer'
                 }}
               >
-                <Sparkles size={13} />
+                <Sparkles size={14} />
                 <span>Simulate Demo Action</span>
               </button>
+
               {simulatedAction && (
-                <span style={{ fontSize: '12px', fontWeight: '700', color: '#15803d', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  <CheckCircle2 size={14} /> Action verified (mock environment)
+                <span style={{ fontSize: '12px', fontWeight: '750', color: '#15803d', display: 'inline-flex', alignItems: 'center', gap: '5px', background: '#ecfdf5', padding: '6px 12px', borderRadius: '999px' }}>
+                  <CheckCircle2 size={14} /> {actionMessage || 'Action verified (mock environment)'}
                 </span>
               )}
             </div>
           </div>
         </div>
-      </main>
-    </div>
-  )
+      </div>
+    )
 }
 
 export default FeaturePlaceholder
+

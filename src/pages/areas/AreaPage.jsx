@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { FEATURE_REGISTRY, getRoadmapFeatures } from '@/features/registry'
 import { DemoBanner } from '@/components/DemoBanner'
@@ -6,14 +6,14 @@ import { findDemoUserById } from '@/mocks/auth'
 import {
   Calendar, Users, Stethoscope, Receipt, BookOpen, Package, MessageSquare,
   Globe, BarChart3, Settings, Milestone, ArrowRight, ArrowLeft, Home,
-  Lock, CheckCircle2, Sparkles, Compass
+  Lock, CheckCircle2, Sparkles, Compass, Search, Filter, ShieldCheck
 } from 'lucide-react'
 
 const AREA_META = {
   appointments: {
     title: 'Appointments & Clinic Operations',
     icon: Calendar,
-    desc: 'Smart scheduling, live queue tracking, doctor rosters, and waiting-room management.'
+    desc: 'Smart scheduling, doctor rosters, and appointment management.'
   },
   patients: {
     title: 'Patients & Dental Records',
@@ -68,6 +68,8 @@ const AREA_META = {
 }
 
 export function AreaPage({ areaKey }) {
+  const [filterQuery, setFilterQuery] = useState('')
+
   const meta = AREA_META[areaKey] || {
     title: `${areaKey.charAt(0).toUpperCase() + areaKey.slice(1)} Area`,
     icon: Compass,
@@ -82,9 +84,20 @@ export function AreaPage({ areaKey }) {
   const userRole = currentUser?.role || 'ORGANIZATION_ADMIN'
 
   // Features belonging to this area
-  const features = isRoadmap
+  const allFeatures = isRoadmap
     ? getRoadmapFeatures()
-    : FEATURE_REGISTRY.filter((f) => f.area.toLowerCase() === areaKey.toLowerCase() && f.phase === 'launch')
+    : FEATURE_REGISTRY.filter((f) => f.area.toLowerCase() === areaKey.toLowerCase() && f.phase === 'launch' && f.inNav)
+
+  // Filtered by search query if any
+  const filteredFeatures = useMemo(() => {
+    if (!filterQuery.trim()) return allFeatures
+    const q = filterQuery.toLowerCase()
+    return allFeatures.filter((f) =>
+      f.name.toLowerCase().includes(q) ||
+      (f.desc && f.desc.toLowerCase().includes(q)) ||
+      (f.route && f.route.toLowerCase().includes(q))
+    )
+  }, [allFeatures, filterQuery])
 
   // Accounts features for billing cross-navigation (Problem P5)
   const accountsFeatures = areaKey === 'billing'
@@ -92,10 +105,12 @@ export function AreaPage({ areaKey }) {
     : []
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--paper, #fbfbf9)', display: 'flex', flexDirection: 'column' }} data-testid={`area-page-${areaKey}`}>
-      {/* Top Header */}
-      <header style={{
-        background: '#ffffff',
+    <div className="area-page-container" style={{ minHeight: '100vh', background: 'var(--paper, #fbfbf9)', display: 'flex', flexDirection: 'column' }} data-testid={`area-page-${areaKey}`}>
+      {/* Top Header with Glassmorphism */}
+      <header className="area-page-header" style={{
+        background: 'rgba(255, 255, 255, 0.94)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         borderBottom: '1px solid var(--line, #e9e9e5)',
         padding: '12px clamp(16px, 3vw, 32px)',
         display: 'flex',
@@ -103,7 +118,8 @@ export function AreaPage({ areaKey }) {
         justifyContent: 'space-between',
         position: 'sticky',
         top: 0,
-        zIndex: 90
+        zIndex: 90,
+        boxShadow: '0 1px 6px rgba(0, 0, 0, 0.03)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Link
@@ -112,23 +128,29 @@ export function AreaPage({ areaKey }) {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '6px 12px',
+              padding: '6px 13px',
               borderRadius: '999px',
               border: '1px solid var(--line, #e9e9e5)',
               background: '#ffffff',
               fontSize: '12px',
               fontWeight: '700',
               color: 'var(--charcoal-dark, #111a1a)',
-              textDecoration: 'none'
+              textDecoration: 'none',
+              transition: 'all 0.18s ease'
             }}
           >
             <Home size={13} style={{ color: 'var(--teal-primary, #008891)' }} />
             <span>Clinic Dashboard</span>
           </Link>
           <span style={{ color: 'var(--line, #e9e9e5)' }}>|</span>
-          <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)' }}>
-            {meta.title}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '10px', fontWeight: '800', background: 'rgba(0, 136, 145, 0.1)', color: 'var(--teal-primary, #008891)', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
+              Area
+            </span>
+            <span style={{ fontSize: '13.5px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)' }}>
+              {meta.title}
+            </span>
+          </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -154,48 +176,71 @@ export function AreaPage({ areaKey }) {
       </header>
 
       {/* Main Content Area */}
-      <main style={{ flex: 1, padding: '32px clamp(16px, 4vw, 40px)', maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
+      <main style={{ flex: 1, padding: '32px clamp(16px, 4vw, 40px)', maxWidth: '1120px', margin: '0 auto', width: '100%' }}>
         {/* Area Header Card */}
         <div style={{
-          background: '#ffffff',
-          borderRadius: '18px',
-          border: '1px solid var(--line, #e9e9e5)',
+          background: 'linear-gradient(135deg, rgba(0, 136, 145, 0.08) 0%, rgba(221, 244, 239, 0.45) 55%, #ffffff 100%)',
+          borderRadius: '20px',
+          border: '1px solid rgba(0, 136, 145, 0.22)',
           padding: '28px clamp(20px, 3vw, 36px)',
           marginBottom: '28px',
-          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.02)'
+          boxShadow: '0 4px 20px rgba(0, 136, 145, 0.04)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              background: 'rgba(0, 136, 145, 0.1)',
-              color: 'var(--teal-primary, #008891)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Icon size={20} />
-            </div>
-            <div>
-              <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--charcoal-muted, #6e7e7d)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Operational Area
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '46px',
+                height: '46px',
+                borderRadius: '12px',
+                background: 'var(--teal-primary, #008891)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 14px rgba(0, 136, 145, 0.3)'
+              }}>
+                <Icon size={22} />
               </div>
-              <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)', margin: 0 }}>
-                {meta.title}
-              </h1>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '10.5px', fontWeight: '800', color: 'var(--teal-primary, #008891)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    CLINICAL PRACTICE MODULE
+                  </span>
+                  <span style={{ fontSize: '10px', fontWeight: '800', background: '#ecfdf5', color: '#047857', padding: '1px 6px', borderRadius: '4px' }}>
+                    ABDM M1
+                  </span>
+                </div>
+                <h1 style={{ fontSize: '24px', fontWeight: '850', color: 'var(--charcoal-title, #1a2626)', margin: '2px 0 0 0' }}>
+                  {meta.title}
+                </h1>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{
+                fontSize: '12px',
+                fontWeight: '750',
+                color: 'var(--charcoal-dark, #111a1a)',
+                background: '#ffffff',
+                border: '1px solid var(--line, #e9e9e5)',
+                padding: '5px 12px',
+                borderRadius: '999px'
+              }}>
+                {allFeatures.length} Sub-pages Connected
+              </span>
             </div>
           </div>
-          <p style={{ fontSize: '14px', color: 'var(--charcoal-body, #475554)', lineHeight: '1.6', maxWidth: '720px', marginTop: '6px' }}>
+
+          <p style={{ fontSize: '14px', color: 'var(--charcoal-body, #475554)', lineHeight: '1.6', maxWidth: '780px', margin: 0 }}>
             {meta.desc}
           </p>
 
           {/* Sub-pages Pills Quick Bar */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--line, #e9e9e5)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(0, 136, 145, 0.15)' }}>
             <span style={{ fontSize: '11.5px', fontWeight: '800', color: 'var(--charcoal-muted, #6e7e7d)', alignSelf: 'center', marginRight: '6px' }}>
-              Sub-Pages:
+              Quick Jump:
             </span>
-            {features.map((feat) => {
+            {allFeatures.map((feat) => {
               const targetUrl = isRoadmap
                 ? `/coming-soon/${feat.id}`
                 : feat.route.replace(':id', feat.area === 'Patients' ? 'pt-1001' : 'apt-101')
@@ -204,14 +249,25 @@ export function AreaPage({ areaKey }) {
                   key={feat.id}
                   to={targetUrl}
                   style={{
-                    fontSize: '12px',
+                    fontSize: '11.5px',
                     fontWeight: '700',
-                    padding: '5px 12px',
+                    padding: '4px 11px',
                     borderRadius: '999px',
-                    background: '#f4f6f5',
+                    background: '#ffffff',
                     color: 'var(--charcoal-dark, #111a1a)',
+                    border: '1px solid var(--line, #e9e9e5)',
                     textDecoration: 'none',
                     transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--teal-primary, #008891)'
+                    e.currentTarget.style.color = 'var(--teal-primary, #008891)'
+                    e.currentTarget.style.background = 'rgba(0, 136, 145, 0.05)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--line, #e9e9e5)'
+                    e.currentTarget.style.color = 'var(--charcoal-dark, #111a1a)'
+                    e.currentTarget.style.background = '#ffffff'
                   }}
                 >
                   {feat.name}
@@ -221,22 +277,45 @@ export function AreaPage({ areaKey }) {
           </div>
         </div>
 
-        {/* Sub-pages Cards Grid */}
-        <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontSize: '17px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)' }}>
-            All Pages in this Area ({features.length})
-          </h2>
-          <span style={{ fontSize: '12px', color: 'var(--charcoal-muted, #6e7e7d)' }}>
-            Single source of truth registry
-          </span>
+        {/* Sub-pages Header Bar with Live Filter Search */}
+        <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h2 style={{ fontSize: '18px', fontWeight: '850', color: 'var(--charcoal-title, #1a2626)', margin: 0 }}>
+              All Subpages in {meta.title.split('&')[0].trim()} ({allFeatures.length})
+            </h2>
+            <span style={{ fontSize: '12px', color: 'var(--charcoal-muted, #6e7e7d)' }}>
+              Verified clinical workflows under single-source registry
+            </span>
+          </div>
+
+          {/* Quick Filter Input */}
+          <div style={{ position: 'relative', width: '240px' }}>
+            <Search size={14} style={{ position: 'absolute', left: '10px', top: '9px', color: 'var(--charcoal-muted, #6e7e7d)' }} />
+            <input
+              type="text"
+              placeholder={`Filter ${allFeatures.length} pages...`}
+              value={filterQuery}
+              onChange={(e) => setFilterQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '6px 12px 6px 32px',
+                borderRadius: '999px',
+                border: '1px solid var(--line, #e9e9e5)',
+                fontSize: '12px',
+                background: '#ffffff',
+                outline: 'none'
+              }}
+            />
+          </div>
         </div>
 
+        {/* Sub-pages Cards Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
           gap: '16px'
         }}>
-          {features.map((feat) => {
+          {filteredFeatures.map((feat) => {
             const targetUrl = isRoadmap
               ? `/coming-soon/${feat.id}`
               : feat.route.replace(':id', feat.area === 'Patients' ? 'pt-1001' : 'apt-101')
@@ -244,41 +323,38 @@ export function AreaPage({ areaKey }) {
               <Link
                 key={feat.id}
                 to={targetUrl}
+                className="dm-dash-card"
                 style={{
-                  background: '#ffffff',
-                  border: '1px solid var(--line, #e9e9e5)',
-                  borderRadius: '14px',
-                  padding: '20px',
+                  padding: '22px',
                   textDecoration: 'none',
                   display: 'flex',
                   flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                  justifyContent: 'space-between'
                 }}
               >
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                     <span style={{
-                      fontSize: '10.5px',
+                      fontSize: '10px',
                       fontWeight: '800',
                       padding: '3px 8px',
                       borderRadius: '4px',
                       background: feat.phase === 'launch' ? 'rgba(0, 136, 145, 0.08)' : '#e0e7ff',
-                      color: feat.phase === 'launch' ? 'var(--teal-primary, #008891)' : '#3730a3'
+                      color: feat.phase === 'launch' ? 'var(--teal-primary, #008891)' : '#3730a3',
+                      letterSpacing: '0.04em'
                     }}>
-                      {feat.phase === 'launch' ? 'Launch' : feat.phase.toUpperCase()}
+                      {feat.phase === 'launch' ? 'LAUNCH READY' : feat.phase.toUpperCase()}
                     </span>
                     <span style={{ fontSize: '11px', color: 'var(--charcoal-muted, #6e7e7d)', fontFamily: 'monospace' }}>
                       {feat.source}
                     </span>
                   </div>
 
-                  <h3 style={{ fontSize: '15px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)', marginBottom: '6px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '850', color: 'var(--charcoal-title, #1a2626)', marginBottom: '6px' }}>
                     {feat.name}
                   </h3>
-                  <p style={{ fontSize: '12.5px', color: 'var(--charcoal-body, #475554)', lineHeight: '1.5', marginBottom: '16px' }}>
-                    {feat.description}
+                  <p style={{ fontSize: '12.5px', color: 'var(--charcoal-body, #475554)', lineHeight: '1.55', marginBottom: '16px' }}>
+                    {feat.desc || feat.description}
                   </p>
                 </div>
 
@@ -290,13 +366,13 @@ export function AreaPage({ areaKey }) {
                   borderTop: '1px solid var(--line, #e9e9e5)',
                   fontSize: '11.5px',
                   color: 'var(--teal-primary, #008891)',
-                  fontWeight: '700'
+                  fontWeight: '750'
                 }}>
-                  <span style={{ fontFamily: 'monospace', color: 'var(--charcoal-muted, #6e7e7d)' }}>
+                  <span style={{ fontFamily: 'monospace', color: 'var(--charcoal-muted, #6e7e7d)', fontSize: '11px' }}>
                     {targetUrl}
                   </span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    Open Page <ArrowRight size={13} />
+                    Open Module <ArrowRight size={13} />
                   </span>
                 </div>
               </Link>
@@ -306,14 +382,28 @@ export function AreaPage({ areaKey }) {
 
         {/* Cross-linking for Accounts from Billing Area Hub (Problem P5) */}
         {accountsFeatures.length > 0 && (
-          <div style={{ marginTop: '36px' }}>
-            <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ marginTop: '40px' }}>
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(0, 136, 145, 0.06) 0%, #ffffff 100%)',
+              border: '1px solid rgba(0, 136, 145, 0.2)',
+              borderRadius: '16px',
+              padding: '18px 22px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}>
               <div>
-                <h2 style={{ fontSize: '17px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)' }}>
-                  Accounts & Financial Ledgers ({accountsFeatures.length})
-                </h2>
-                <p style={{ fontSize: '12px', color: 'var(--charcoal-muted, #6e7e7d)', margin: '2px 0 0 0' }}>
-                  Double-entry accounting, day book, GST reports, and Tally export
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                  <ShieldCheck size={16} style={{ color: 'var(--teal-primary, #008891)' }} />
+                  <h2 style={{ fontSize: '16px', fontWeight: '850', color: 'var(--charcoal-title, #1a2626)', margin: 0 }}>
+                    Accounts & Financial Ledgers ({accountsFeatures.length})
+                  </h2>
+                </div>
+                <p style={{ fontSize: '12.5px', color: 'var(--charcoal-muted, #6e7e7d)', margin: 0 }}>
+                  Double-entry accounting, day book, GST reports, and automated Tally XML sync
                 </p>
               </div>
               <Link
@@ -322,13 +412,14 @@ export function AreaPage({ areaKey }) {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  padding: '6px 12px',
+                  padding: '7px 14px',
                   borderRadius: '999px',
-                  background: 'rgba(0, 136, 145, 0.08)',
-                  color: 'var(--teal-primary, #008891)',
+                  background: 'var(--teal-primary, #008891)',
+                  color: '#ffffff',
                   fontSize: '12px',
-                  fontWeight: '700',
-                  textDecoration: 'none'
+                  fontWeight: '750',
+                  textDecoration: 'none',
+                  boxShadow: '0 4px 12px rgba(0, 136, 145, 0.25)'
                 }}
               >
                 <span>Accounts Hub</span>
@@ -338,7 +429,7 @@ export function AreaPage({ areaKey }) {
 
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
               gap: '16px'
             }}>
               {accountsFeatures.map((feat) => {
@@ -347,40 +438,37 @@ export function AreaPage({ areaKey }) {
                   <Link
                     key={feat.id}
                     to={feat.route}
+                    className="dm-dash-card"
                     style={{
-                      background: '#ffffff',
-                      border: '1px solid var(--line, #e9e9e5)',
-                      borderRadius: '14px',
                       padding: '20px',
                       textDecoration: 'none',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'space-between',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
-                      opacity: isRestricted ? 0.8 : 1
+                      opacity: isRestricted ? 0.82 : 1
                     }}
                   >
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                         <span style={{
-                          fontSize: '10.5px',
+                          fontSize: '10px',
                           fontWeight: '800',
                           padding: '3px 8px',
                           borderRadius: '4px',
                           background: isRestricted ? '#fee2e2' : 'rgba(0, 136, 145, 0.08)',
                           color: isRestricted ? '#dc2626' : 'var(--teal-primary, #008891)'
                         }}>
-                          {isRestricted ? 'Restricted (Admin & Accountant only)' : 'Launch'}
+                          {isRestricted ? 'RESTRICTED (ADMIN/ACCOUNTS)' : 'LAUNCH READY'}
                         </span>
                         <span style={{ fontSize: '11px', color: 'var(--charcoal-muted, #6e7e7d)', fontFamily: 'monospace' }}>
                           {feat.source}
                         </span>
                       </div>
-                      <h3 style={{ fontSize: '15px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)', marginBottom: '6px' }}>
+                      <h3 style={{ fontSize: '15px', fontWeight: '850', color: 'var(--charcoal-title, #1a2626)', marginBottom: '6px' }}>
                         {feat.name}
                       </h3>
                       <p style={{ fontSize: '12.5px', color: 'var(--charcoal-body, #475554)', lineHeight: '1.5', marginBottom: '16px' }}>
-                        {feat.description}
+                        {feat.desc || feat.description}
                       </p>
                     </div>
 
@@ -392,9 +480,9 @@ export function AreaPage({ areaKey }) {
                       borderTop: '1px solid var(--line, #e9e9e5)',
                       fontSize: '11.5px',
                       color: 'var(--teal-primary, #008891)',
-                      fontWeight: '700'
+                      fontWeight: '750'
                     }}>
-                      <span style={{ fontFamily: 'monospace', color: 'var(--charcoal-muted, #6e7e7d)' }}>
+                      <span style={{ fontFamily: 'monospace', color: 'var(--charcoal-muted, #6e7e7d)', fontSize: '11px' }}>
                         {feat.route}
                       </span>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
@@ -413,3 +501,4 @@ export function AreaPage({ areaKey }) {
 }
 
 export default AreaPage
+

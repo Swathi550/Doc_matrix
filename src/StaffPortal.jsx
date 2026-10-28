@@ -1,12 +1,13 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { FEATURE_REGISTRY } from '@/features/registry'
+import { getActiveFeatureForPath, resolveFeatureRoute } from '@/features/navigationMatcher'
 import {
   Calendar, Users, Stethoscope, Receipt, BookOpen, Package, MessageSquare, Globe,
   BarChart3, Settings, LayoutDashboard, LogOut, User, Menu, X, ChevronRight, ChevronDown,
   Sparkles, CheckCircle2, ArrowRight, ArrowLeft, Clock,
   Check, ShieldAlert, CreditCard, Search, Plus, Filter, Phone, Mail, FileText,
-  Trash2, Edit3, Printer, Share2, CheckCircle, RefreshCw
+  Trash2, Edit3, Printer, Share2, CheckCircle, RefreshCw, AlertCircle, Bell, Activity
 } from 'lucide-react'
 
 // Authentic DocMatrix Medical Cross Mark
@@ -18,6 +19,71 @@ function MedicalCrossMark({ light = false }) {
       <i />
       <i />
     </span>
+  )
+}
+
+function ClinicDashboardOverview({ currentUser, navigateTo }) {
+  const summaryCards = [
+    { label: "Today's appointments", value: '18', note: 'Today’s schedule', icon: Calendar, color: '#718982', fill: 67, route: '/appointments/new' },
+    { label: 'Completed visits', value: '12', note: 'On track for today', icon: CheckCircle2, color: '#788c7b', fill: 72, route: '/appointments/new' },
+    { label: 'Collections today', value: '₹34,500', note: '82% of daily target', icon: Receipt, color: '#718982', fill: 82, route: '/billing/collection' },
+    { label: 'Pending patient dues', value: '₹12,800', note: '4 accounts need follow-up', icon: CreditCard, color: '#a18a68', fill: 42, route: '/billing/dues' }
+  ]
+  const activityBars = [38, 62, 46, 83, 58, 94, 68]
+
+  return (
+    <section className="dashboard-reference">
+      <header className="dashboard-reference-header">
+        <div>
+          <div className="dashboard-eyebrow"><span className="pulse-indicator-emerald" /> CLINIC OVERVIEW <span>·</span> TODAY</div>
+          <h1>Good morning, {currentUser.name.split(' ')[0]}</h1>
+          <p>{currentUser.clinicName} <span>·</span> Here’s your practice at a glance.</p>
+        </div>
+        <div className="dashboard-header-actions">
+          <button className="dashboard-button-secondary" onClick={() => navigateTo('/patients/new')}><Plus size={15} /> Add patient</button>
+          <button className="dashboard-button-primary" onClick={() => navigateTo('/appointments/new')}><Plus size={15} /> Book appointment</button>
+        </div>
+      </header>
+
+      <div className="dashboard-summary-grid">
+        {summaryCards.map((card) => {
+          const Icon = card.icon
+          return <button className="dashboard-summary-card" key={card.label} onClick={() => navigateTo(card.route)}>
+            <div className="dashboard-summary-top"><span>{card.label}</span><i style={{ color: card.color, background: `${card.color}12` }}><Icon size={17} /></i></div>
+            <strong>{card.value}</strong>
+            <div className="dashboard-summary-footer"><span>{card.note}</span><ArrowRight size={14} /></div>
+            <div className="dashboard-progress-track"><span style={{ width: `${card.fill}%`, background: card.color }} /></div>
+          </button>
+        })}
+      </div>
+
+      <div className="dashboard-main-grid">
+        <section className="dashboard-panel dashboard-analytics-panel">
+          <div className="dashboard-panel-heading"><div><h2>Appointment activity</h2><p>Patient visits throughout the day</p></div><button onClick={() => navigateTo('/appointments/new')}>View schedule <ArrowRight size={14} /></button></div>
+          <div className="dashboard-chart">
+            {activityBars.map((height, i) => <div className="dashboard-chart-column" key={i}><span className={i === 5 ? 'is-highlighted' : ''} style={{ height: `${height}%` }} /><small>{['9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM'][i]}</small></div>)}
+          </div>
+          <div className="dashboard-chart-legend"><span><i /> Appointments</span><span>18 scheduled today</span></div>
+        </section>
+
+        <section className="dashboard-panel dashboard-reminders-panel">
+          <div className="dashboard-panel-heading"><div><h2>Clinic reminders</h2><p>Items that need attention</p></div><span className="dashboard-count">3</span></div>
+          <button className="dashboard-reminder" onClick={() => navigateTo('/patients/pt-1001')}><i className="reminder-dot reminder-red" /><span><strong>Check patient allergy</strong><small>Meera Nambiar · before prescribing</small></span><ChevronRight size={16} /></button>
+          <button className="dashboard-reminder" onClick={() => navigateTo('/inventory/alerts')}><i className="reminder-dot reminder-amber" /><span><strong>Restock latex gloves</strong><small>2 boxes left in inventory</small></span><ChevronRight size={16} /></button>
+          <button className="dashboard-reminder" onClick={() => navigateTo('/lab')}><i className="reminder-dot reminder-green" /><span><strong>Lab case ready</strong><small>Fatima Zahra · crown cementation</small></span><ChevronRight size={16} /></button>
+          <button className="dashboard-reminders-link" onClick={() => navigateTo('/notifications')}>See all reminders <ArrowRight size={14} /></button>
+        </section>
+      </div>
+
+      <div className="dashboard-lower-grid">
+        <section className="dashboard-panel dashboard-progress-panel">
+          <div className="dashboard-panel-heading"><div><h2>Today’s progress</h2><p>Clinic targets</p></div><BarChart3 size={18} /></div>
+          <div className="dashboard-progress-item"><div><span>Appointments</span><strong>12 / 18</strong></div><div className="dashboard-progress-track"><span style={{ width: '67%' }} /></div></div>
+          <div className="dashboard-progress-item"><div><span>Daily collections</span><strong>₹34,500 / ₹42,000</strong></div><div className="dashboard-progress-track"><span style={{ width: '82%', background: '#16865b' }} /></div></div>
+          <div className="dashboard-progress-callout"><Clock size={17} /><span><strong>Next appointment</strong><small>Open today's appointment calendar</small></span><button onClick={() => navigateTo('/appointments/new')}><ArrowRight size={15} /></button></div>
+        </section>
+      </div>
+    </section>
   )
 }
 
@@ -50,10 +116,11 @@ const AREA_ICONS = {
 }
 
 export default function StaffPortal({
-  user = { id: 'usr-104', name: 'Dr. Arun Kumar', role: 'DOCTOR', clinicName: 'Demo Dental Clinic' },
+  user = { id: 'usr-104', name: 'Dr. Arun Kumar', role: 'DOCTOR', clinicName: 'DocMatrix Dental Care' },
   onUserChange,
   onLogout,
-  onReturnToWebsite
+  onReturnToWebsite,
+  children
 }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -62,18 +129,40 @@ export default function StaffPortal({
     return location.pathname && location.pathname !== '/' ? location.pathname : '/dashboard'
   })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileOpenArea, setMobileOpenArea] = useState(null)
   const [lang, setLang] = useState('en')
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [headerSearch, setHeaderSearch] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [currentTime, setCurrentTime] = useState('11:20 AM')
 
-  // Interactive Live Queue State
-  const [queueItems, setQueueItems] = useState([
-    { id: 'q-1', token: 'T-01', patient: 'Meera Nambiar', phone: '+91 94471 23456', time: '10:00 AM', arrival: '09:52 AM', waitMins: 8, doctor: 'Dr. Arun Kumar', stage: 'Waiting', reason: 'Toothache (Upper Molar)' },
-    { id: 'q-2', token: 'T-02', patient: 'Rahul Krishnan', phone: '+91 98460 54321', time: '10:15 AM', arrival: '10:00 AM', waitMins: 15, doctor: 'Dr. Arun Kumar', stage: 'In Consultation', reason: 'Routine Scaling & Polish' },
-    { id: 'q-3', token: 'T-03', patient: 'Fatima Zahra', phone: '+91 97455 11223', time: '10:30 AM', arrival: '10:08 AM', waitMins: 22, doctor: 'Dr. Tariq Antoun', stage: 'Waiting', reason: 'Ceramic Crown Fitting' },
-    { id: 'q-4', token: 'T-04', patient: 'George Mathew', phone: '+91 94470 98765', time: '10:45 AM', arrival: '10:35 AM', waitMins: 5, doctor: 'Dr. Arun Kumar', stage: 'Arrived', reason: 'Post-op Extraction Review' },
-    { id: 'q-5', token: 'T-05', patient: 'Ananya Pillai', phone: '+91 98472 33445', time: '11:00 AM', arrival: '10:45 AM', waitMins: 2, doctor: 'Dr. Tariq Antoun', stage: 'Arrived', reason: 'Clear Aligner Consultation' }
-  ])
+  // Close popovers on click outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest('.notifications-box') && !e.target.closest('.notifications-btn')) {
+        setNotificationsOpen(false)
+      }
+      if (!e.target.closest('.role-box') && !e.target.closest('.role-btn')) {
+        setRoleDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
+
+  // Live timer tick
+  useEffect(() => {
+    const updateTime = () => {
+      try {
+        const d = new Date()
+        setCurrentTime(d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }))
+      } catch {}
+    }
+    updateTime()
+    const interval = setInterval(updateTime, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Interactive Patients State
   const [patientsList, setPatientsList] = useState([
@@ -84,6 +173,50 @@ export default function StaffPortal({
     { id: 'DM-2026-005', name: 'Ananya Pillai', age: 22, gender: 'F', phone: '+91 98472 33445', doctor: 'Dr. Tariq Antoun', alerts: 'None', lastVisit: '01 Oct 2026', treatment: 'Clear Aligner Scan & Plan', balance: '₹0' }
   ])
 
+  // 4 Operatories Monitor State
+  const [operatoryChairs, setOperatoryChairs] = useState([
+    {
+      id: 'chair-1',
+      operatory: 'Operatory 1 • Endodontics Suite',
+      doctor: 'Dr. Arun Kumar',
+      patient: 'Meera Nambiar',
+      proc: 'Root Canal Treatment (Session 2/3)',
+      status: 'In Chair',
+      elapsed: '18 min elapsed',
+      type: 'occupied'
+    },
+    {
+      id: 'chair-2',
+      operatory: 'Operatory 2 • Ortho & Esthetics',
+      doctor: 'Dr. Tariq Antoun',
+      patient: 'Rahul Krishnan',
+      proc: 'Ceramic Crown Cementation',
+      status: 'Next In Chair',
+      elapsed: 'Arrived 10:00 AM',
+      type: 'waiting'
+    },
+    {
+      id: 'chair-3',
+      operatory: 'Operatory 3 • Hygiene & Periodontics',
+      doctor: 'Dr. Priya Nair',
+      patient: 'George Mathew',
+      proc: 'Ultrasonic Scaling & Polish',
+      status: 'Sanitizing Bay',
+      elapsed: 'Ready in 3 min',
+      type: 'sanitizing'
+    },
+    {
+      id: 'chair-4',
+      operatory: 'Operatory 4 • Surgical Implant Bay',
+      doctor: 'Consultant Surgeon',
+      patient: 'Next: Fatima Zahra (11:15 AM)',
+      proc: 'Implant Impression & Torque Test',
+      status: 'Sterilized & Ready',
+      elapsed: 'Ready for Patient',
+      type: 'ready'
+    }
+  ])
+
   // Keep route synced with browser address bar
   useEffect(() => {
     if (location.pathname && location.pathname !== '/login' && location.pathname !== '/signup') {
@@ -92,8 +225,9 @@ export default function StaffPortal({
   }, [location.pathname])
 
   const navigateTo = (route) => {
-    setActiveRoute(route)
-    navigate(route)
+    const targetRoute = resolveFeatureRoute(route)
+    setActiveRoute(targetRoute)
+    navigate(targetRoute)
     setMobileMenuOpen(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -108,15 +242,17 @@ export default function StaffPortal({
     return map
   }, [])
 
-  // Check role permission for active feature
+  // Check role permission for active feature (Single Source of Truth)
   const activeFeature = useMemo(() => {
-    return ALL_LAUNCH_FEATURES.find((f) => f.route === activeRoute)
-  }, [activeRoute])
+    return getActiveFeatureForPath(location.pathname || activeRoute, ALL_LAUNCH_FEATURES)
+  }, [activeRoute, location.pathname])
 
   const isForbidden = useMemo(() => {
     if (!activeFeature || !activeFeature.roles) return false
     return !activeFeature.roles.includes(currentUser.role)
   }, [activeFeature, currentUser.role])
+
+  const isDashboard = location.pathname === '/dashboard' || (location.pathname === '/' && activeRoute === '/dashboard')
 
   // Switch role handler (stores ONLY user id in sessionStorage)
   const handleRoleSelect = (roleObj) => {
@@ -135,11 +271,6 @@ export default function StaffPortal({
     if (onUserChange) onUserChange(updated)
   }
 
-  // Update patient stage in queue
-  const handleStageChange = (id, newStage) => {
-    setQueueItems(prev => prev.map(item => item.id === id ? { ...item, stage: newStage } : item))
-  }
-
   return (
     <div className="staff-portal-container" style={{
       minHeight: '100vh',
@@ -149,19 +280,22 @@ export default function StaffPortal({
       color: 'var(--ink, #0b0b0b)',
       fontFamily: '"Instrument Sans", "Plus Jakarta Sans", "Inter", -apple-system, sans-serif'
     }}>
-      {/* Top Header */}
+      {/* Top Header with Glassmorphic Elevation */}
       <header style={{
-        background: '#ffffff',
+        background: 'rgba(255, 255, 255, 0.94)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         borderBottom: '1px solid var(--line, #e9e9e5)',
-        padding: '10px clamp(16px, 3vw, 28px)',
+        padding: '10px clamp(16px, 2.8vw, 32px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         position: 'sticky',
-        top: '32px',
-        zIndex: 90
+        top: 0,
+        zIndex: 90,
+        boxShadow: '0 1px 6px rgba(0, 0, 0, 0.03)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -179,40 +313,194 @@ export default function StaffPortal({
             {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
-          {/* Brand Logo */}
+          {/* Brand Logo & Clinic Badging */}
           <div
             onClick={() => navigateTo('/dashboard')}
             style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
           >
             <MedicalCrossMark />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '11px', fontWeight: '900', letterSpacing: '0.08em', color: 'var(--teal-primary, #008891)' }}>
-                DOC MATRIX
-              </span>
-              <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--charcoal-title, #1a2626)' }}>
-                {currentUser.clinicName || 'Demo Dental Clinic'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '900', letterSpacing: '0.08em', color: 'var(--teal-primary, #008891)' }}>
+                  DOC MATRIX
+                </span>
+                <span style={{ fontSize: '9px', fontWeight: '800', background: 'rgba(0, 136, 145, 0.1)', color: 'var(--teal-primary, #008891)', padding: '1px 5px', borderRadius: '4px' }}>
+                  CLINICAL
+                </span>
+              </div>
+              <span style={{ fontSize: '13px', fontWeight: '750', color: 'var(--charcoal-title, #1a2626)' }}>
+                {currentUser.clinicName || 'DocMatrix Dental Care'}
               </span>
             </div>
           </div>
 
-          {/* Breadcrumb path */}
-          <div style={{ display: 'none', alignItems: 'center', gap: '6px', fontSize: '12.5px', color: 'var(--charcoal-muted, #6e7e7d)', paddingLeft: '14px', borderLeft: '1px solid var(--line, #e9e9e5)' }} className="desktop-breadcrumb">
-            <span style={{ cursor: 'pointer', color: activeRoute === '/dashboard' ? 'var(--teal-primary)' : 'inherit', fontWeight: activeRoute === '/dashboard' ? '700' : 'normal' }} onClick={() => navigateTo('/dashboard')}>
+          {/* Breadcrumb Path */}
+          <div style={{ display: 'none', alignItems: 'center', gap: '6px', fontSize: '12.5px', color: 'var(--charcoal-muted, #6e7e7d)', paddingLeft: '16px', borderLeft: '1px solid var(--line, #e9e9e5)' }} className="desktop-breadcrumb">
+            <span
+              style={{
+                cursor: 'pointer',
+                color: isDashboard ? 'var(--teal-primary)' : 'inherit',
+                fontWeight: isDashboard ? '750' : 'normal'
+              }}
+              onClick={() => navigateTo('/dashboard')}
+            >
               Dashboard
             </span>
-            {activeFeature && (
+            {activeFeature ? (
               <>
                 <ChevronRight size={13} />
-                <span>{activeFeature.area}</span>
+                <span
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => navigateTo(`/${activeFeature.area.toLowerCase()}`)}
+                >
+                  {activeFeature.area}
+                </span>
                 <ChevronRight size={13} />
-                <span style={{ fontWeight: '700', color: 'var(--charcoal-title, #1a2626)' }}>{activeFeature.name}</span>
+                <span style={{ fontWeight: '750', color: 'var(--charcoal-title, #1a2626)' }}>
+                  {activeFeature.name}
+                </span>
               </>
-            )}
+            ) : !isDashboard && location.pathname !== '/' ? (
+              <>
+                <ChevronRight size={13} />
+                <span style={{ fontWeight: '750', color: 'var(--charcoal-title, #1a2626)', textTransform: 'capitalize' }}>
+                  {location.pathname.replace('/', '').replace(/-/g, ' ')}
+                </span>
+              </>
+            ) : null}
           </div>
         </div>
 
-        {/* Right Header Controls */}
+        {/* Right Header Controls: Search, Clock, Bell, User switcher */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Quick Search Bar */}
+          <div style={{ position: 'relative', display: 'none' }} className="desktop-search-container">
+            <Search size={14} style={{ position: 'absolute', left: '10px', top: '9px', color: 'var(--charcoal-muted, #6e7e7d)' }} />
+            <input
+              type="text"
+              placeholder="Quick search patients, MRN..."
+              value={headerSearch}
+              onChange={(e) => setHeaderSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && headerSearch.trim()) {
+                  navigateTo('/patients/list')
+                }
+              }}
+              style={{
+                padding: '6px 28px 6px 30px',
+                borderRadius: '999px',
+                border: '1px solid var(--line, #e9e9e5)',
+                fontSize: '12px',
+                background: '#f8faf9',
+                width: '180px',
+                outline: 'none',
+                transition: 'all 0.2s ease'
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.width = '230px'
+                e.currentTarget.style.borderColor = 'var(--teal-primary, #008891)'
+                e.currentTarget.style.background = '#ffffff'
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.width = '180px'
+                e.currentTarget.style.borderColor = 'var(--line, #e9e9e5)'
+                e.currentTarget.style.background = '#f8faf9'
+              }}
+            />
+          </div>
+
+          {/* Real-time Kerala Standard Time Clock */}
+          <div style={{
+            display: 'none',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '5px 11px',
+            borderRadius: '999px',
+            background: 'rgba(0, 136, 145, 0.06)',
+            fontSize: '11.5px',
+            color: 'var(--charcoal-dark, #111a1a)',
+            fontWeight: '700'
+          }} className="desktop-clock-pill">
+            <span className="pulse-indicator-emerald" />
+            <span>{currentTime}</span>
+            <span style={{ fontSize: '10px', color: 'var(--charcoal-muted, #6e7e7d)' }}>• Kerala IST</span>
+          </div>
+
+          {/* Clinical Notifications Bell */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setNotificationsOpen(!notificationsOpen)}
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '50%',
+                border: '1px solid var(--line, #e9e9e5)',
+                background: notificationsOpen ? 'rgba(0, 136, 145, 0.08)' : '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--charcoal-dark, #111a1a)',
+                cursor: 'pointer',
+                position: 'relative'
+              }}
+              aria-label="Clinical notifications" className="notifications-btn"
+            >
+              <Bell size={15} />
+              <span style={{
+                position: 'absolute',
+                top: '-2px',
+                right: '-2px',
+                width: '15px',
+                height: '15px',
+                borderRadius: '50%',
+                background: '#dc2626',
+                color: '#ffffff',
+                fontSize: '9.5px',
+                fontWeight: '800',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                3
+              </span>
+            </button>
+
+            {/* Notifications Popover */}
+            {notificationsOpen && (
+              <div className="notifications-box" style={{
+                position: 'absolute',
+                right: 0,
+                top: '42px',
+                width: '310px',
+                background: '#ffffff',
+                border: '1px solid var(--line, #e9e9e5)',
+                borderRadius: '14px',
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.12)',
+                padding: '12px',
+                zIndex: 130
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', paddingBottom: '8px', borderBottom: '1px solid var(--line)' }}>
+                  <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--charcoal-title)' }}>Clinical Notifications</span>
+                  <span style={{ fontSize: '10px', fontWeight: '800', background: '#fee2e2', color: '#b91c1c', padding: '2px 6px', borderRadius: '4px' }}>3 Urgent</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ padding: '8px', borderRadius: '8px', background: '#fef2f2', border: '1px solid #fee2e2' }}>
+                    <div style={{ fontSize: '11px', fontWeight: '800', color: '#b91c1c' }}>⚠️ Drug Allergy Warning</div>
+                    <div style={{ fontSize: '11px', color: '#7f1d1d' }}>Meera Nambiar (Chair 1) has Penicillin Allergy recorded.</div>
+                  </div>
+                  <div style={{ padding: '8px', borderRadius: '8px', background: '#fffbeb', border: '1px solid #fef3c7' }}>
+                    <div style={{ fontSize: '11px', fontWeight: '800', color: '#b45309' }}>📦 Reorder Stock: Latex Gloves</div>
+                    <div style={{ fontSize: '11px', color: '#78350f' }}>Latex Gloves (M) reached reorder threshold (2 boxes left).</div>
+                  </div>
+                  <div style={{ padding: '8px', borderRadius: '8px', background: '#f0fdf4', border: '1px solid #dcfce7' }}>
+                    <div style={{ fontSize: '11px', fontWeight: '800', color: '#15803d' }}>🦷 DentArt Kerala Lab Delivery</div>
+                    <div style={{ fontSize: '11px', color: '#14532d' }}>Zirconia Crown for Fatima Zahra received at clinic desk.</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Back to Website Button */}
           {onReturnToWebsite && (
             <button
@@ -221,7 +509,7 @@ export default function StaffPortal({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '6px 14px',
+                padding: '6px 13px',
                 borderRadius: '999px',
                 border: '1.5px solid var(--line, #e9e9e5)',
                 background: '#ffffff',
@@ -256,12 +544,12 @@ export default function StaffPortal({
           {/* Interactive Role Switcher Dropdown */}
           <div style={{ position: 'relative' }}>
             <button
-              onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+              onClick={() => setRoleDropdownOpen(!roleDropdownOpen)} className="role-btn"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                padding: '6px 12px',
+                padding: '5px 12px 5px 6px',
                 borderRadius: '999px',
                 background: 'rgba(0, 136, 145, 0.08)',
                 border: '1px solid rgba(0, 136, 145, 0.25)',
@@ -271,18 +559,31 @@ export default function StaffPortal({
                 cursor: 'pointer'
               }}
             >
-              <User size={13} style={{ color: 'var(--teal-primary, #008891)' }} />
-              <span style={{ maxWidth: '130px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                background: 'var(--teal-primary, #008891)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '11px',
+                fontWeight: '800'
+              }}>
+                {currentUser.name.charAt(0) || 'U'}
+              </div>
+              <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {currentUser.name}
               </span>
-              <span style={{ fontSize: '10px', fontWeight: '800', background: 'var(--teal-primary, #008891)', color: '#ffffff', padding: '2px 6px', borderRadius: '4px' }}>
+              <span style={{ fontSize: '9.5px', fontWeight: '800', background: 'var(--teal-primary, #008891)', color: '#ffffff', padding: '1px 5px', borderRadius: '4px' }}>
                 {currentUser.role}
               </span>
               <ChevronDown size={13} />
             </button>
 
             {roleDropdownOpen && (
-              <div style={{
+              <div className="role-box" style={{
                 position: 'absolute',
                 right: 0,
                 top: '42px',
@@ -353,23 +654,40 @@ export default function StaffPortal({
 
       {/* 3. Main Portal Body (Sidebar + Content Stage) */}
       <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
+        {mobileMenuOpen && (
+          <div
+            onClick={() => setMobileMenuOpen(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.45)',
+              zIndex: 140,
+              backdropFilter: 'blur(2px)'
+            }}
+            aria-hidden="true"
+          />
+        )}
         {/* Left Sidebar Navigation */}
         <aside
           style={{
-            width: '260px',
+            width: '240px',
             background: '#ffffff',
             borderRight: '1px solid var(--line, #e9e9e5)',
             display: 'flex',
             flexDirection: 'column',
             position: 'sticky',
-            top: '92px',
-            height: 'calc(100vh - 92px)',
-            overflowY: 'auto'
+            top: '58px',
+            height: 'calc(100vh - 58px)',
+            overflow: 'visible',
+            zIndex: 80
           }}
           className={`staff-sidebar ${mobileMenuOpen ? 'is-open' : ''}`}
         >
           {/* Dashboard Home Link */}
-          <div style={{ padding: '12px 14px 4px 14px' }}>
+          <div style={{ padding: '12px 12px 4px 12px' }}>
             <button
               onClick={() => navigateTo('/dashboard')}
               style={{
@@ -380,12 +698,12 @@ export default function StaffPortal({
                 padding: '9px 12px',
                 borderRadius: '10px',
                 border: 'none',
-                background: activeRoute === '/dashboard' ? 'var(--teal-primary, #008891)' : 'transparent',
-                color: activeRoute === '/dashboard' ? '#ffffff' : 'var(--charcoal-body, #475554)',
+                background: isDashboard ? 'var(--teal-primary, #008891)' : 'transparent',
+                color: isDashboard ? '#ffffff' : 'var(--charcoal-body, #475554)',
                 fontSize: '13px',
-                fontWeight: activeRoute === '/dashboard' ? '700' : '600',
+                fontWeight: isDashboard ? '750' : '600',
                 cursor: 'pointer',
-                transition: 'all 0.18s ease'
+                transition: 'all 0.16s ease'
               }}
             >
               <LayoutDashboard size={16} />
@@ -393,9 +711,9 @@ export default function StaffPortal({
             </button>
           </div>
 
-          {/* Grouped Areas (Forbidden items hidden per Decision D4 / P3) */}
-          <div style={{ padding: '8px 14px 20px 14px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {Object.entries(groupedAreas).map(([areaName, features]) => {
+          {/* Main Modules with Hover Flyout Submenus */}
+          <div style={{ padding: '6px 12px 20px 12px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            {Object.entries(groupedAreas).map(([areaName, features], index, arr) => {
               if (areaName === 'Accounts' && !['ORGANIZATION_ADMIN', 'ACCOUNTANT'].includes(currentUser.role)) {
                 return null
               }
@@ -403,58 +721,142 @@ export default function StaffPortal({
                 return null
               }
               const IconComp = AREA_ICONS[areaName] || Calendar
-              return (
-                <div key={areaName}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '4px 8px',
-                    fontSize: '10.5px',
-                    fontWeight: '800',
-                    color: 'var(--charcoal-muted, #6e7e7d)',
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase'
-                  }}>
-                    <IconComp size={12} style={{ color: 'var(--teal-primary, #008891)' }} />
-                    <span>{areaName}</span>
-                  </div>
+              const isAreaActive = activeFeature?.area === areaName || location.pathname.startsWith(`/${areaName.toLowerCase()}`)
+              const isBottomAlign = index >= arr.length - 3
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '2px' }}>
-                    {features.map((feat) => {
-                      if (feat.roles && !feat.roles.includes(currentUser.role)) {
-                        return null
+              // Filter features allowed for current user role
+              const visibleFeatures = features.filter((feat) => !feat.roles || feat.roles.includes(currentUser.role))
+              if (visibleFeatures.length === 0) return null
+
+              return (
+                <div
+                  key={areaName}
+                  className={`staff-module-item ${mobileOpenArea === areaName ? 'is-mobile-open' : ''}`}
+                >
+                  {/* Main Module Button */}
+                  <button
+                    onClick={() => {
+                      if (window.innerWidth <= 820) {
+                        setMobileOpenArea(mobileOpenArea === areaName ? null : areaName)
+                      } else {
+                        navigateTo(`/${areaName.toLowerCase()}`)
                       }
-                      const isCurrent = activeRoute === feat.route
-                      return (
-                        <button
-                          key={feat.id}
-                          data-testid={`sidebar-link-${feat.id}`}
-                          onClick={() => navigateTo(feat.route.includes(':id') ? feat.route.replace(':id', feat.area === 'Patients' ? 'pt-1001' : 'apt-101') : feat.route)}
-                          style={{
-                            width: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '7px 10px',
-                            borderRadius: '8px',
-                            border: 'none',
-                            background: isCurrent ? 'rgba(0, 136, 145, 0.1)' : 'transparent',
-                            color: isCurrent ? 'var(--teal-primary, #008891)' : 'var(--charcoal-body, #475554)',
-                            fontSize: '12px',
-                            fontWeight: isCurrent ? '750' : '550',
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease'
-                          }}
-                        >
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {feat.name}
+                    }}
+                    className={`staff-module-btn ${isAreaActive ? 'is-active' : ''}`}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '9px 12px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      background: isAreaActive ? 'rgba(0, 136, 145, 0.08)' : 'transparent',
+                      color: isAreaActive ? 'var(--teal-primary, #008891)' : 'var(--charcoal-body, #475554)',
+                      fontSize: '13px',
+                      fontWeight: isAreaActive ? '750' : '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <IconComp
+                        size={16}
+                        style={{
+                          color: isAreaActive ? 'var(--teal-primary, #008891)' : 'var(--charcoal-muted, #6e7e7d)'
+                        }}
+                      />
+                      <span>{areaName}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: '700',
+                          padding: '1px 6px',
+                          borderRadius: '999px',
+                          background: isAreaActive ? 'rgba(0, 136, 145, 0.18)' : '#f1f5f5',
+                          color: isAreaActive ? 'var(--teal-primary, #008891)' : '#64748b'
+                        }}
+                      >
+                        {visibleFeatures.length}
+                      </span>
+                      <ChevronRight
+                        size={13}
+                        style={{
+                          color: isAreaActive ? 'var(--teal-primary, #008891)' : '#94a3b8',
+                          transition: 'transform 0.15s ease'
+                        }}
+                        className="module-chevron"
+                      />
+                    </div>
+                  </button>
+
+                  {/* Floating Hover Flyout with Sub-Modules */}
+                  <div className={`staff-module-flyout ${isBottomAlign ? 'flyout-align-bottom' : ''}`}>
+                    <div className="staff-flyout-card">
+                      <div
+                        className="staff-flyout-header"
+                        onClick={() => navigateTo(`/${areaName.toLowerCase()}`)}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <IconComp size={13} style={{ color: 'var(--teal-primary, #008891)' }} />
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: '800',
+                              color: 'var(--charcoal-title, #1a2626)',
+                              letterSpacing: '0.04em',
+                              textTransform: 'uppercase'
+                            }}
+                          >
+                            {areaName}
                           </span>
-                          {isCurrent && <ChevronRight size={12} />}
-                        </button>
-                      )
-                    })}
+                        </div>
+                        <span style={{ fontSize: '11px', color: 'var(--teal-primary, #008891)', fontWeight: '700' }}>
+                          Hub ↗
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        {visibleFeatures.map((feat) => {
+                          const isCurrent = activeFeature?.id === feat.id
+                          return (
+                            <button
+                              key={feat.id}
+                              data-testid={`sidebar-link-${feat.id}`}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                navigateTo(resolveFeatureRoute(feat.route, feat.area))
+                              }}
+                              className={`staff-sub-item-btn ${isCurrent ? 'is-active' : ''}`}
+                              style={{
+                                width: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '7px 10px',
+                                borderRadius: '7px',
+                                border: 'none',
+                                background: isCurrent ? 'rgba(0, 136, 145, 0.1)' : 'transparent',
+                                color: isCurrent ? 'var(--teal-primary, #008891)' : 'var(--charcoal-body, #475554)',
+                                fontSize: '12px',
+                                fontWeight: isCurrent ? '750' : '550',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {feat.name}
+                              </span>
+                              {isCurrent && <ChevronRight size={12} />}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )
@@ -494,606 +896,12 @@ export default function StaffPortal({
                 </button>
               </div>
             </div>
-          ) : activeRoute === '/dashboard' ? (
-            /* ===============================================================
-               DASHBOARD VIEW (6 Clearly Labelled DEMO Metric Cards)
-               =============================================================== */
-            <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                    <h1 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)' }}>
-                      Clinic Operations Dashboard
-                    </h1>
-                    <span style={{ fontSize: '11px', fontWeight: '800', padding: '3px 8px', borderRadius: '6px', background: '#ddf4ef', color: '#00757d' }}>
-                      <Sparkles size={11} style={{ display: 'inline', marginRight: '4px' }} />
-                      LIVE DEMO DATA
-                    </span>
-                  </div>
-                  <p style={{ fontSize: '13px', color: 'var(--charcoal-muted, #6e7e7d)' }}>
-                    Clinic overview, live queues, patient consultations, and collections for {currentUser.clinicName}
-                  </p>
-                </div>
-
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => navigateTo('/appointments/new')}
-                    className="btn-hero-teal"
-                    style={{ padding: '8px 16px', fontSize: '12.5px', borderRadius: '999px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
-                  >
-                    <span>+ Book Appointment</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* 6 DEMO Metric Cards */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                gap: '16px',
-                marginBottom: '32px'
-              }}>
-                {[
-                  { title: "Today's Appointments", value: '18', badge: 'TODAY', desc: '12 completed • 4 waiting • 2 no-shows', route: '/appointments/queue', icon: Calendar, color: '#008891' },
-                  { title: 'Waiting Room Queue', value: '5 Patients', badge: 'LIVE QUEUE', desc: 'Average wait: 14 mins (Under target)', route: '/appointments/queue', icon: Clock, color: '#0A9EAD' },
-                  { title: 'Collections Today', value: '₹34,500', badge: 'DAILY BILLING', desc: 'Cash: ₹8,000 • Card: ₹14,500 • UPI: ₹12,000', route: '/billing/collection', icon: Receipt, color: '#059669' },
-                  { title: 'Pending Dues', value: '₹12,800', badge: 'OVERDUE DUES', desc: 'Across 4 patient treatment cycles', route: '/billing/dues', icon: CreditCard, color: '#d97706' },
-                  { title: 'Low Stock Alerts', value: '3 Items', badge: 'INVENTORY', desc: 'Latex Gloves (M), Composite Resin A2', route: '/inventory/alerts', icon: Package, color: '#dc2626' },
-                  { title: 'Missed Enquiries', value: '4 Bookings', badge: 'ONLINE ENQUIRIES', desc: 'Follow-ups required on website requests', route: '/appointments/missed-enquiries', icon: MessageSquare, color: '#7c3aed' }
-                ].map((card, i) => {
-                  const IconC = card.icon
-                  return (
-                    <div
-                      key={i}
-                      onClick={() => navigateTo(card.route)}
-                      style={{
-                        background: '#ffffff',
-                        border: '1px solid var(--line, #e9e9e5)',
-                        borderRadius: '16px',
-                        padding: '18px 20px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                        <span style={{ fontSize: '10.5px', fontWeight: '800', letterSpacing: '0.04em', color: card.color, background: 'rgba(0, 136, 145, 0.08)', padding: '3px 8px', borderRadius: '4px' }}>
-                          {card.badge}
-                        </span>
-                        <IconC size={18} style={{ color: card.color }} />
-                      </div>
-                      <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--charcoal-muted, #6e7e7d)', marginBottom: '4px' }}>
-                        {card.title}
-                      </div>
-                      <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)', marginBottom: '8px' }}>
-                        {card.value}
-                      </div>
-                      <div style={{ fontSize: '11.5px', color: 'var(--charcoal-body, #475554)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span>{card.desc}</span>
-                        <ArrowRight size={13} style={{ color: card.color }} />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Quick Navigation Hub to All 10 Practice Areas */}
-              <div style={{ background: '#ffffff', border: '1px solid var(--line, #e9e9e5)', borderRadius: '18px', padding: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.02)' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)', marginBottom: '14px' }}>
-                  Quick Launch by Clinical Area
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                  {Object.entries(groupedAreas).map(([area, list]) => {
-                    const AreaIcon = AREA_ICONS[area] || Calendar
-                    return (
-                      <button
-                        key={area}
-                        onClick={() => navigateTo(list[0]?.route || '/dashboard')}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          padding: '10px 14px',
-                          borderRadius: '10px',
-                          border: '1px solid var(--line, #e9e9e5)',
-                          background: '#fbfbf9',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        <AreaIcon size={16} style={{ color: 'var(--teal-primary)' }} />
-                        <div>
-                          <div style={{ fontSize: '12.5px', fontWeight: '750', color: 'var(--charcoal-title)' }}>{area}</div>
-                          <div style={{ fontSize: '11px', color: 'var(--charcoal-muted)' }}>{list.length} launch pages</div>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          ) : activeRoute === '/appointments/queue' ? (
-            /* ===============================================================
-               LIVE PATIENT QUEUE SCREEN
-               =============================================================== */
-            <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-                <div>
-                  <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'var(--charcoal-title)' }}>Live Patient Queue</h1>
-                  <p style={{ fontSize: '13px', color: 'var(--charcoal-muted)' }}>Real-time waiting room queue with active doctor consultations</p>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => navigateTo('/appointments/new')} className="btn-hero-teal" style={{ padding: '8px 14px', fontSize: '12px', borderRadius: '999px', cursor: 'pointer' }}>
-                    + Add Walk-In Patient
-                  </button>
-                </div>
-              </div>
-
-              {/* Queue Status Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-                <div style={{ background: '#ffffff', padding: '14px', borderRadius: '12px', border: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--charcoal-muted)' }}>PATIENTS WAITING</div>
-                  <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--teal-primary)' }}>3</div>
-                </div>
-                <div style={{ background: '#ffffff', padding: '14px', borderRadius: '12px', border: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--charcoal-muted)' }}>IN CONSULTATION</div>
-                  <div style={{ fontSize: '22px', fontWeight: '800', color: '#059669' }}>1</div>
-                </div>
-                <div style={{ background: '#ffffff', padding: '14px', borderRadius: '12px', border: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--charcoal-muted)' }}>AVG WAITING TIME</div>
-                  <div style={{ fontSize: '22px', fontWeight: '800', color: '#d97706' }}>11 min</div>
-                </div>
-                <div style={{ background: '#ffffff', padding: '14px', borderRadius: '12px', border: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--charcoal-muted)' }}>COMPLETED TODAY</div>
-                  <div style={{ fontSize: '22px', fontWeight: '800', color: 'var(--charcoal-title)' }}>12</div>
-                </div>
-              </div>
-
-              {/* Queue Table */}
-              <div style={{ background: '#ffffff', border: '1px solid var(--line)', borderRadius: '14px', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12.5px' }}>
-                  <thead>
-                    <tr style={{ background: 'var(--surface-alt)', borderBottom: '1px solid var(--line)', color: 'var(--charcoal-muted)', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>
-                      <th style={{ padding: '12px 16px' }}>Token</th>
-                      <th style={{ padding: '12px 16px' }}>Patient</th>
-                      <th style={{ padding: '12px 16px' }}>Reason</th>
-                      <th style={{ padding: '12px 16px' }}>Doctor</th>
-                      <th style={{ padding: '12px 16px' }}>Wait Time</th>
-                      <th style={{ padding: '12px 16px' }}>Stage</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {queueItems.map((item) => (
-                      <tr key={item.id} style={{ borderBottom: '1px solid var(--line)' }}>
-                        <td style={{ padding: '14px 16px', fontWeight: '800', color: 'var(--teal-primary)' }}>{item.token}</td>
-                        <td style={{ padding: '14px 16px' }}>
-                          <div style={{ fontWeight: '700', color: 'var(--charcoal-title)' }}>{item.patient}</div>
-                          <div style={{ fontSize: '11px', color: 'var(--charcoal-muted)' }}>{item.phone}</div>
-                        </td>
-                        <td style={{ padding: '14px 16px', color: 'var(--charcoal-body)' }}>{item.reason}</td>
-                        <td style={{ padding: '14px 16px', color: 'var(--charcoal-body)' }}>{item.doctor}</td>
-                        <td style={{ padding: '14px 16px' }}>
-                          <span style={{
-                            padding: '3px 8px',
-                            borderRadius: '999px',
-                            fontSize: '11px',
-                            fontWeight: '700',
-                            background: item.waitMins > 20 ? '#fef2f2' : item.waitMins > 10 ? '#fffbeb' : '#f0fdf4',
-                            color: item.waitMins > 20 ? '#dc2626' : item.waitMins > 10 ? '#d97706' : '#16a34a'
-                          }}>
-                            {item.waitMins} mins
-                          </span>
-                        </td>
-                        <td style={{ padding: '14px 16px' }}>
-                          <span style={{
-                            padding: '3px 8px',
-                            borderRadius: '6px',
-                            fontSize: '11px',
-                            fontWeight: '700',
-                            background: item.stage === 'In Consultation' ? '#ddf4ef' : item.stage === 'Waiting' ? '#fef3c7' : '#f1f5f9',
-                            color: item.stage === 'In Consultation' ? '#00757d' : item.stage === 'Waiting' ? '#92400e' : '#475554'
-                          }}>
-                            {item.stage}
-                          </span>
-                        </td>
-                        <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                          {item.stage === 'Waiting' ? (
-                            <button
-                              onClick={() => handleStageChange(item.id, 'In Consultation')}
-                              style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', background: 'var(--teal-primary)', color: '#ffffff', fontSize: '11.5px', fontWeight: '700', cursor: 'pointer' }}
-                            >
-                              Call to Chair
-                            </button>
-                          ) : item.stage === 'In Consultation' ? (
-                            <button
-                              onClick={() => handleStageChange(item.id, 'Completed')}
-                              style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', background: '#059669', color: '#ffffff', fontSize: '11.5px', fontWeight: '700', cursor: 'pointer' }}
-                            >
-                              Finish Visit
-                            </button>
-                          ) : (
-                            <span style={{ fontSize: '11.5px', color: '#16a34a', fontWeight: '700' }}>✓ Completed</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : activeRoute === '/patients' || activeRoute === '/patients/list' ? (
-            /* ===============================================================
-               PATIENTS DIRECTORY SCREEN
-               =============================================================== */
-            <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-                <div>
-                  <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'var(--charcoal-title)' }}>Patients Directory</h1>
-                  <p style={{ fontSize: '13px', color: 'var(--charcoal-muted)' }}>Longitudinal dental records, allergies, and treatment histories</p>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => navigateTo('/patients/new')} className="btn-hero-teal" style={{ padding: '8px 14px', fontSize: '12px', borderRadius: '999px', cursor: 'pointer' }}>
-                    + New Patient Registration
-                  </button>
-                </div>
-              </div>
-
-              {/* Search Bar */}
-              <div style={{ marginBottom: '16px', display: 'flex', gap: '10px' }}>
-                <div style={{ flex: 1, position: 'relative' }}>
-                  <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--charcoal-muted)' }} />
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search patients by name, phone or patient ID..."
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px 10px 38px',
-                      borderRadius: '10px',
-                      border: '1px solid var(--line)',
-                      fontSize: '13px',
-                      background: '#ffffff'
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Patients Table */}
-              <div style={{ background: '#ffffff', border: '1px solid var(--line)', borderRadius: '14px', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12.5px' }}>
-                  <thead>
-                    <tr style={{ background: 'var(--surface-alt)', borderBottom: '1px solid var(--line)', color: 'var(--charcoal-muted)', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>
-                      <th style={{ padding: '12px 16px' }}>Patient ID</th>
-                      <th style={{ padding: '12px 16px' }}>Name & Demographic</th>
-                      <th style={{ padding: '12px 16px' }}>Medical Alerts</th>
-                      <th style={{ padding: '12px 16px' }}>Active Treatment</th>
-                      <th style={{ padding: '12px 16px' }}>Assigned Doctor</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {patientsList
-                      .filter(p => !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.phone.includes(searchTerm) || p.id.toLowerCase().includes(searchTerm.toLowerCase()))
-                      .map((p) => (
-                        <tr key={p.id} style={{ borderBottom: '1px solid var(--line)' }}>
-                          <td style={{ padding: '14px 16px', fontWeight: '800', color: 'var(--teal-primary)' }}>{p.id}</td>
-                          <td style={{ padding: '14px 16px' }}>
-                            <div style={{ fontWeight: '700', color: 'var(--charcoal-title)' }}>{p.name}</div>
-                            <div style={{ fontSize: '11px', color: 'var(--charcoal-muted)' }}>{p.age} yrs • {p.gender} • {p.phone}</div>
-                          </td>
-                          <td style={{ padding: '14px 16px' }}>
-                            {p.alerts !== 'None' ? (
-                              <span style={{ background: '#fee2e2', color: '#b91c1c', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '700' }}>
-                                ⚠️ {p.alerts}
-                              </span>
-                            ) : (
-                              <span style={{ color: 'var(--charcoal-muted)', fontSize: '11.5px' }}>None recorded</span>
-                            )}
-                          </td>
-                          <td style={{ padding: '14px 16px', color: 'var(--charcoal-body)' }}>{p.treatment}</td>
-                          <td style={{ padding: '14px 16px', color: 'var(--charcoal-body)' }}>{p.doctor}</td>
-                          <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                            <button
-                              onClick={() => navigateTo('/clinical/prescriptions')}
-                              style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid var(--line)', background: '#ffffff', color: 'var(--teal-primary)', fontSize: '11.5px', fontWeight: '700', cursor: 'pointer', marginRight: '6px' }}
-                            >
-                              New Rx
-                            </button>
-                            <button
-                              onClick={() => navigateTo('/billing/invoices')}
-                              style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid var(--line)', background: '#ffffff', color: 'var(--charcoal-body)', fontSize: '11.5px', fontWeight: '700', cursor: 'pointer' }}
-                            >
-                              Invoice
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : activeRoute === '/clinical/prescriptions' ? (
-            /* ===============================================================
-               DIGITAL PRESCRIPTION SCREEN
-               =============================================================== */
-            <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-                <div>
-                  <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'var(--charcoal-title)' }}>Digital Prescriptions</h1>
-                  <p style={{ fontSize: '13px', color: 'var(--charcoal-muted)' }}>Generate compliant clinical prescriptions on official clinic letterhead</p>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => alert('Demo Action: Printing Prescription PDF to Letterhead')} className="btn-hero-outline" style={{ padding: '8px 14px', fontSize: '12px', borderRadius: '999px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                    <Printer size={13} /> Print
-                  </button>
-                  <button onClick={() => alert('Demo Action: Sent via Official WhatsApp API to patient')} className="btn-hero-teal" style={{ padding: '8px 14px', fontSize: '12px', borderRadius: '999px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                    <Share2 size={13} /> Send via WhatsApp
-                  </button>
-                </div>
-              </div>
-
-              {/* Clinic Letterhead Preview */}
-              <div style={{ background: '#ffffff', border: '1px solid var(--line)', borderRadius: '16px', padding: '36px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-                {/* Letterhead Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid var(--teal-primary)', paddingBottom: '16px', marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <MedicalCrossMark />
-                    <div>
-                      <h2 style={{ fontSize: '18px', fontWeight: '900', color: 'var(--teal-primary)' }}>DOC MATRIX DENTAL CLINIC</h2>
-                      <div style={{ fontSize: '11px', color: 'var(--charcoal-muted)' }}>MG Road, Ernakulam, Kerala • Reg: KMC/DEN/48291 • Tel: +91 484 2345678</div>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '800', color: 'var(--charcoal-title)' }}>Dr. Arun Kumar, BDS, MDS</div>
-                    <div style={{ fontSize: '11px', color: 'var(--charcoal-muted)' }}>Consultant Endodontist & Dental Surgeon</div>
-                  </div>
-                </div>
-
-                {/* Patient Bar */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'var(--surface-alt)', borderRadius: '8px', fontSize: '12px', marginBottom: '24px' }}>
-                  <div><strong>Patient:</strong> Meera Nambiar (DM-2026-001)</div>
-                  <div><strong>Age / Gender:</strong> 34 / Female</div>
-                  <div><strong>Date:</strong> 15 Oct 2026</div>
-                  <div><strong style={{ color: '#dc2626' }}>Allergy:</strong> Penicillin</div>
-                </div>
-
-                {/* Rx Symbol & Medication Table */}
-                <div style={{ fontSize: '20px', fontWeight: '900', color: 'var(--teal-primary)', marginBottom: '12px' }}>℞</div>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px', marginBottom: '28px' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1.5px solid var(--line)', color: 'var(--charcoal-muted)', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>
-                      <th style={{ padding: '8px 4px' }}>#</th>
-                      <th style={{ padding: '8px 4px' }}>Medicine / Brand</th>
-                      <th style={{ padding: '8px 4px' }}>Dosage & Frequency</th>
-                      <th style={{ padding: '8px 4px' }}>Duration</th>
-                      <th style={{ padding: '8px 4px' }}>Instructions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr style={{ borderBottom: '1px solid var(--line)' }}>
-                      <td style={{ padding: '12px 4px' }}>1</td>
-                      <td style={{ padding: '12px 4px', fontWeight: '700' }}>Tab. Cefuroxime 500mg (Ceftum)</td>
-                      <td style={{ padding: '12px 4px' }}>1 tablet • Twice daily (1-0-1)</td>
-                      <td style={{ padding: '12px 4px' }}>5 Days</td>
-                      <td style={{ padding: '12px 4px', color: 'var(--charcoal-muted)' }}>Take after meals</td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid var(--line)' }}>
-                      <td style={{ padding: '12px 4px' }}>2</td>
-                      <td style={{ padding: '12px 4px', fontWeight: '700' }}>Tab. Combiflam (Ibuprofen + Paracetamol)</td>
-                      <td style={{ padding: '12px 4px' }}>1 tablet • SOS for pain (max 3/day)</td>
-                      <td style={{ padding: '12px 4px' }}>3 Days</td>
-                      <td style={{ padding: '12px 4px', color: 'var(--charcoal-muted)' }}>Take after food</td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid var(--line)' }}>
-                      <td style={{ padding: '12px 4px' }}>3</td>
-                      <td style={{ padding: '12px 4px', fontWeight: '700' }}>Chlorhexidine 0.2% Oral Rinse (Hexidine)</td>
-                      <td style={{ padding: '12px 4px' }}>10 ml rinse for 60 secs • Twice daily</td>
-                      <td style={{ padding: '12px 4px' }}>7 Days</td>
-                      <td style={{ padding: '12px 4px', color: 'var(--charcoal-muted)' }}>Do not swallow, rinse after meals</td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                {/* Advice Notes */}
-                <div style={{ padding: '14px', borderRadius: '8px', background: '#fbfbf9', border: '1px solid var(--line)', marginBottom: '36px', fontSize: '12.5px' }}>
-                  <div style={{ fontWeight: '800', marginBottom: '4px', color: 'var(--charcoal-title)' }}>Clinical Advice & Follow-Up:</div>
-                  <ul style={{ paddingLeft: '18px', color: 'var(--charcoal-body)', lineHeight: '1.6' }}>
-                    <li>Avoid chewing hard food on upper right side until permanent crown is seated.</li>
-                    <li>Continue warm salt water gargle starting tomorrow morning.</li>
-                    <li>Next appointment scheduled for <strong>Tuesday, 20 Oct at 10:30 AM</strong> for crown cementation.</li>
-                  </ul>
-                </div>
-
-                {/* Signature Bar */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', textAlign: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--teal-primary)', borderBottom: '1px solid var(--line)', paddingBottom: '4px', marginBottom: '4px' }}>
-                      Digitally Verified by Dr. Arun Kumar
-                    </div>
-                    <div style={{ fontSize: '10.5px', color: 'var(--charcoal-muted)' }}>Registered Dental Surgeon #KDC-14920</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : activeRoute === '/billing/invoices' ? (
-            /* ===============================================================
-               ITEMISED BILLING INVOICES SCREEN
-               =============================================================== */
-            <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-                <div>
-                  <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'var(--charcoal-title)' }}>Itemised Invoices</h1>
-                  <p style={{ fontSize: '13px', color: 'var(--charcoal-muted)' }}>Manage patient treatment invoices, GST breakdown, and payment status</p>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => navigateTo('/billing/collection')} className="btn-hero-outline" style={{ padding: '8px 14px', fontSize: '12px', borderRadius: '999px', cursor: 'pointer' }}>
-                    Daily Collection
-                  </button>
-                  <button onClick={() => alert('Demo Action: Generated new invoice')} className="btn-hero-teal" style={{ padding: '8px 14px', fontSize: '12px', borderRadius: '999px', cursor: 'pointer' }}>
-                    + New Invoice
-                  </button>
-                </div>
-              </div>
-
-              {/* Invoices Table */}
-              <div style={{ background: '#ffffff', border: '1px solid var(--line)', borderRadius: '14px', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12.5px' }}>
-                  <thead>
-                    <tr style={{ background: 'var(--surface-alt)', borderBottom: '1px solid var(--line)', color: 'var(--charcoal-muted)', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>
-                      <th style={{ padding: '12px 16px' }}>Invoice #</th>
-                      <th style={{ padding: '12px 16px' }}>Patient</th>
-                      <th style={{ padding: '12px 16px' }}>Treatment / Procedure</th>
-                      <th style={{ padding: '12px 16px' }}>Total Amount</th>
-                      <th style={{ padding: '12px 16px' }}>Payment Method</th>
-                      <th style={{ padding: '12px 16px' }}>Status</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      { id: 'INV-2026-089', patient: 'Meera Nambiar', service: 'Root Canal Treatment + Restoration', amount: '₹4,500', method: 'UPI (GPay)', status: 'Paid', date: 'Today' },
-                      { id: 'INV-2026-088', patient: 'Rahul Krishnan', service: 'Full Mouth Scaling & Polishing', amount: '₹1,200', method: 'Cash Drawer', status: 'Paid', date: 'Today' },
-                      { id: 'INV-2026-087', patient: 'Fatima Zahra', service: 'E-Max Ceramic Crown (Session 1/2)', amount: '₹6,000', method: 'Card POS (₹3,000)', status: 'Partially Paid', date: '12 Oct' },
-                      { id: 'INV-2026-086', patient: 'George Mathew', service: 'Surgical Extraction + Antibiotics', amount: '₹1,800', method: 'Pending', status: 'Unpaid Dues', date: '08 Oct' }
-                    ].map((inv) => (
-                      <tr key={inv.id} style={{ borderBottom: '1px solid var(--line)' }}>
-                        <td style={{ padding: '14px 16px', fontWeight: '800', color: 'var(--teal-primary)' }}>{inv.id}</td>
-                        <td style={{ padding: '14px 16px', fontWeight: '700', color: 'var(--charcoal-title)' }}>{inv.patient}</td>
-                        <td style={{ padding: '14px 16px', color: 'var(--charcoal-body)' }}>{inv.service}</td>
-                        <td style={{ padding: '14px 16px', fontWeight: '800', color: 'var(--charcoal-title)' }}>{inv.amount}</td>
-                        <td style={{ padding: '14px 16px', color: 'var(--charcoal-muted)' }}>{inv.method}</td>
-                        <td style={{ padding: '14px 16px' }}>
-                          <span style={{
-                            padding: '3px 8px',
-                            borderRadius: '6px',
-                            fontSize: '11px',
-                            fontWeight: '700',
-                            background: inv.status === 'Paid' ? '#ddf4ef' : inv.status === 'Partially Paid' ? '#fef3c7' : '#fee2e2',
-                            color: inv.status === 'Paid' ? '#00757d' : inv.status === 'Partially Paid' ? '#92400e' : '#b91c1c'
-                          }}>
-                            {inv.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                          <button
-                            onClick={() => alert(`Demo Action: Printing PDF for ${inv.id}`)}
-                            style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid var(--line)', background: '#ffffff', color: 'var(--charcoal-body)', fontSize: '11.5px', fontWeight: '700', cursor: 'pointer' }}
-                          >
-                            PDF Invoice
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+          ) : isDashboard ? (
+            <ClinicDashboardOverview currentUser={currentUser} navigateTo={navigateTo} />
           ) : (
-            /* ===============================================================
-               DEDICATED 55-FEATURE INTERACTIVE WORKSPACE
-               =============================================================== */
-            <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-              <div style={{ marginBottom: '16px' }}>
-                <button
-                  onClick={() => navigateTo('/dashboard')}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    color: 'var(--charcoal-muted)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '4px 8px',
-                    borderRadius: '6px'
-                  }}
-                >
-                  <ArrowLeft size={14} /> Back to Dashboard
-                </button>
-              </div>
-
-              {/* Feature Header Card */}
-              <div style={{
-                background: '#ffffff',
-                border: '1px solid var(--line, #e9e9e5)',
-                borderRadius: '18px',
-                padding: '28px',
-                boxShadow: '0 4px 20px rgba(0, 136, 145, 0.05)',
-                marginBottom: '20px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '11px', fontWeight: '800', background: 'rgba(0, 136, 145, 0.1)', color: 'var(--teal-primary)', padding: '3px 8px', borderRadius: '4px' }}>
-                    {activeFeature?.area}
-                  </span>
-                  <span style={{ fontSize: '11px', fontWeight: '800', background: '#ddf4ef', color: '#00757d', padding: '3px 8px', borderRadius: '4px' }}>
-                    DocMatrix Launch Feature
-                  </span>
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--charcoal-muted)' }}>
-                    • Ref: {activeFeature?.source}
-                  </span>
-                </div>
-
-                <h1 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--charcoal-title, #1a2626)', marginBottom: '8px' }}>
-                  {activeFeature?.name}
-                </h1>
-                <p style={{ fontSize: '14px', color: 'var(--charcoal-body, #475554)', lineHeight: '1.6', marginBottom: '20px' }}>
-                  {activeFeature?.desc}
-                </p>
-
-                {/* Simulated Feature Interface Preview */}
-                <div style={{
-                  padding: '24px',
-                  borderRadius: '14px',
-                  background: 'var(--paper, #fbfbf9)',
-                  border: '1.5px dashed var(--line, #e9e9e5)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--teal-primary)' }}>
-                      CLINICAL WORKSPACE PREVIEW
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--charcoal-muted)' }}>
-                      Route: {activeFeature?.route}
-                    </div>
-                  </div>
-
-                  <div style={{
-                    padding: '24px',
-                    borderRadius: '10px',
-                    background: '#ffffff',
-                    border: '1px solid var(--line, #e9e9e5)',
-                    textAlign: 'center'
-                  }}>
-                    <Sparkles size={24} style={{ color: 'var(--teal-primary)', margin: '0 auto 10px auto' }} />
-                    <h4 style={{ fontSize: '15px', fontWeight: '750', color: 'var(--charcoal-title)', marginBottom: '6px' }}>
-                      {activeFeature?.name} Connected
-                    </h4>
-                    <p style={{ fontSize: '12.5px', color: 'var(--charcoal-muted)', maxWidth: '480px', margin: '0 auto 16px auto' }}>
-                      Ready for practice workflows. All mock clinical records, doctor signatures, and automated event triggers are active.
-                    </p>
-                    <div style={{ display: 'inline-flex', gap: '8px' }}>
-                      <button
-                        onClick={() => alert(`Simulated Action: Triggered test operation for ${activeFeature?.name}`)}
-                        className="btn-hero-teal"
-                        style={{ padding: '8px 16px', fontSize: '12px', borderRadius: '999px', cursor: 'pointer' }}
-                      >
-                        Execute Demo Action
-                      </button>
-                      <button
-                        onClick={() => navigateTo('/dashboard')}
-                        className="btn-hero-outline"
-                        style={{ padding: '8px 16px', fontSize: '12px', borderRadius: '999px', cursor: 'pointer' }}
-                      >
-                        Back to Dashboard
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            /* Submodule Content Loaded Inline inside Main Content Area */
+            <div style={{ width: '100%', minHeight: '100%' }}>
+              {children || <Outlet />}
             </div>
           )}
         </main>
@@ -1101,6 +909,82 @@ export default function StaffPortal({
 
       {/* Responsive Style Overrides */}
       <style>{`
+        @media (min-width: 821px) {
+          .desktop-breadcrumb {
+            display: flex !important;
+          }
+          .desktop-search-container {
+            display: block !important;
+          }
+          .desktop-clock-pill {
+            display: flex !important;
+          }
+        }
+
+        /* Sidebar Main Module Hover Flyouts */
+        .staff-module-item {
+          position: relative;
+        }
+        .staff-module-btn:hover {
+          background: rgba(0, 136, 145, 0.05) !important;
+          color: var(--teal-primary, #008891) !important;
+        }
+        .staff-module-item:hover .module-chevron,
+        .staff-module-item:focus-within .module-chevron {
+          transform: translateX(2px) !important;
+          color: var(--teal-primary, #008891) !important;
+        }
+        .staff-module-flyout {
+          position: absolute;
+          left: 100%;
+          top: 0;
+          padding-left: 8px; /* Seamless hover bridge */
+          z-index: 200;
+          opacity: 0;
+          pointer-events: none;
+          transform: translateX(-6px);
+          transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .staff-module-item:hover .staff-module-flyout,
+        .staff-module-item:focus-within .staff-module-flyout {
+          opacity: 1;
+          pointer-events: auto;
+          transform: translateX(0);
+        }
+        .staff-module-flyout.flyout-align-bottom {
+          top: auto;
+          bottom: -6px;
+        }
+        .staff-flyout-card {
+          width: 235px;
+          background: #ffffff;
+          border: 1px solid rgba(0, 136, 145, 0.22);
+          border-radius: 12px;
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 136, 145, 0.08);
+          padding: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .staff-flyout-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 6px 8px 8px 8px;
+          border-bottom: 1px solid var(--line, #e9e9e5);
+          margin-bottom: 4px;
+          cursor: pointer;
+          border-radius: 6px;
+          transition: background-color 0.15s ease;
+        }
+        .staff-flyout-header:hover {
+          background: rgba(0, 136, 145, 0.05);
+        }
+        .staff-sub-item-btn:hover:not(.is-active) {
+          background: rgba(0, 136, 145, 0.06) !important;
+          color: var(--teal-primary, #008891) !important;
+        }
+
         @media (max-width: 820px) {
           .staff-sidebar {
             position: fixed !important;
@@ -1108,11 +992,34 @@ export default function StaffPortal({
             top: 0 !important;
             height: 100vh !important;
             z-index: 150 !important;
+            overflow-y: auto !important;
             transition: left 0.25s ease !important;
             box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15) !important;
           }
           .staff-sidebar.is-open {
             left: 0 !important;
+          }
+          .staff-module-flyout {
+            position: static !important;
+            padding-left: 0 !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            transform: none !important;
+            display: none;
+          }
+          .staff-module-item.is-mobile-open .staff-module-flyout {
+            display: block !important;
+          }
+          .staff-flyout-card {
+            width: 100% !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: #f8faf9 !important;
+            border-radius: 8px !important;
+            margin-top: 4px !important;
+            margin-bottom: 6px !important;
+            padding: 6px !important;
           }
           .mobile-nav-toggle-btn {
             display: inline-flex !important;
@@ -1125,3 +1032,5 @@ export default function StaffPortal({
     </div>
   )
 }
+
+export { StaffPortal as AppLayout }

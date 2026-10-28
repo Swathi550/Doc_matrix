@@ -20,16 +20,6 @@ export interface FeatureEntry {
  */
 export const FEATURE_REGISTRY: FeatureEntry[] = [
   {
-    "id": "appt.queue",
-    "name": "Live queue",
-    "description": "Live queue: Scheduled, Arrived, Waiting, In Consultation, Completed, with waiting-room timer",
-    "source": "Part 1",
-    "phase": "launch",
-    "area": "Appointments",
-    "route": "/appointments/queue",
-    "inNav": true
-  },
-  {
     "id": "appt.new",
     "name": "Book appointment",
     "description": "Book appointment and walk-ins on real clinic hours and doctor availability",
@@ -40,24 +30,24 @@ export const FEATURE_REGISTRY: FeatureEntry[] = [
     "inNav": true
   },
   {
-    "id": "appt.calendar",
-    "name": "Calendar views",
-    "description": "Day, week and doctor-wise views with filters",
-    "source": "Part 1",
-    "phase": "launch",
-    "area": "Appointments",
-    "route": "/appointments/calendar",
-    "inNav": true
-  },
-  {
     "id": "appt.detail",
-    "name": "Appointment details",
+    "name": "Appointment record view",
     "description": "Appointment details: reschedule and cancel with a reason, automatic no-show marking",
     "source": "Part 1",
     "phase": "launch",
     "area": "Appointments",
     "route": "/appointments/:id",
     "inNav": false
+  },
+  {
+    "id": "appt.details-list",
+    "name": "Appointment details",
+    "description": "View appointment records linked to patients in the current session",
+    "source": "Part 1",
+    "phase": "launch",
+    "area": "Appointments",
+    "route": "/appointments/details",
+    "inNav": true
   },
   {
     "id": "appt.enquiries",
@@ -767,16 +757,6 @@ export const FEATURE_REGISTRY: FeatureEntry[] = [
     "phase": "v2",
     "area": "Roadmap",
     "route": "/coming-soon/f38",
-    "inNav": true
-  },
-  {
-    "id": "f39",
-    "name": "Waiting-room queue display screen",
-    "description": "Waiting-room queue display screen",
-    "source": "#39",
-    "phase": "v2",
-    "area": "Roadmap",
-    "route": "/coming-soon/f39",
     "inNav": true
   },
   {

@@ -1,8 +1,9 @@
 import React, { Suspense, lazy } from 'react'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom'
 import { FEATURE_REGISTRY } from '@/features/registry'
 import { LAUNCH_PAGE_MAP } from '@/features/pageMap'
 import AreaPage from '@/pages/areas/AreaPage'
+import AppointmentsWorkspace from '@/pages/appointments/AppointmentsWorkspace'
 import NotBuiltYetPage from '@/pages/common/NotBuiltYetPage'
 import NotFoundPage from '@/pages/error/NotFoundPage'
 import ForbiddenPage from '@/pages/error/ForbiddenPage'
@@ -10,6 +11,7 @@ import TermsPage from '@/pages/legal/TermsPage'
 import PrivacyPage from '@/pages/legal/PrivacyPage'
 import ComingSoonPage from '@/pages/roadmap/ComingSoonPage'
 import StaffPortal from '@/StaffPortal'
+import ForgotPassword from '@/pages/ForgotPassword'
 
 // Lazy-load all launch feature components
 const lazyComponents = {}
@@ -61,6 +63,7 @@ export function AppRoutes({
         path="/signup"
         element={currentUser ? <Navigate to="/dashboard" replace /> : renderLandingPage('signup')}
       />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/solutions/:id" element={renderLandingPage('solution')} />
 
       {/* 3. Public Legal & Error Pages */}
@@ -68,101 +71,112 @@ export function AppRoutes({
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/forbidden" element={<ForbiddenPage />} />
 
-      {/* 4. Protected Clinic Dashboard */}
+      {/* 4. Protected Clinic Layout & Submodules (Persistent Shell) */}
       <Route
-        path="/dashboard"
         element={
           <ProtectedRoute currentUser={currentUser}>
-            <StaffPortal user={currentUser} onLogout={onLogout} />
+            <StaffPortal user={currentUser} onLogout={onLogout}>
+              <Outlet />
+            </StaffPortal>
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="/dashboard" element={null} />
 
-      {/* 5. Protected Area Hub Pages (Decision D4: Accounts and Settings role-limited) */}
-      <Route
-        path="/appointments"
-        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="appointments" /></ProtectedRoute>}
-      />
-      <Route
-        path="/patients"
-        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="patients" /></ProtectedRoute>}
-      />
-      <Route
-        path="/clinical"
-        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="clinical" /></ProtectedRoute>}
-      />
-      <Route
-        path="/billing"
-        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="billing" /></ProtectedRoute>}
-      />
-      <Route
-        path="/accounts"
-        element={
-          <ProtectedRoute currentUser={currentUser} allowedRoles={['ORGANIZATION_ADMIN', 'ACCOUNTANT']}>
-            <AreaPage areaKey="accounts" />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/inventory"
-        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="inventory" /></ProtectedRoute>}
-      />
-      <Route
-        path="/whatsapp"
-        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="whatsapp" /></ProtectedRoute>}
-      />
-      <Route
-        path="/website"
-        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="website" /></ProtectedRoute>}
-      />
-      <Route
-        path="/reports"
-        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="reports" /></ProtectedRoute>}
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute currentUser={currentUser} allowedRoles={['ORGANIZATION_ADMIN', 'BRANCH_ADMIN']}>
-            <AreaPage areaKey="settings" />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/roadmap"
-        element={<ProtectedRoute currentUser={currentUser}><AreaPage areaKey="roadmap" /></ProtectedRoute>}
-      />
+        {/* 5. Protected Area Hub Pages (Decision D4: Accounts and Settings role-limited) */}
+        <Route
+          path="/appointments"
+          element={<Navigate to="/appointments/new" replace />}
+        />
+        <Route path="/appointments/queue" element={<Navigate to="/appointments/new" replace />} />
+        <Route path="/appointments/calendar" element={<Navigate to="/appointments/new" replace />} />
+        <Route
+          path="/patients"
+          element={<AreaPage areaKey="patients" />}
+        />
+        <Route
+          path="/clinical"
+          element={<AreaPage areaKey="clinical" />}
+        />
+        <Route
+          path="/billing"
+          element={<AreaPage areaKey="billing" />}
+        />
+        <Route
+          path="/accounts"
+          element={
+            <ProtectedRoute currentUser={currentUser} allowedRoles={['ORGANIZATION_ADMIN', 'ACCOUNTANT']}>
+              <AreaPage areaKey="accounts" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inventory"
+          element={<AreaPage areaKey="inventory" />}
+        />
+        <Route
+          path="/whatsapp"
+          element={<AreaPage areaKey="whatsapp" />}
+        />
+        <Route
+          path="/website"
+          element={<AreaPage areaKey="website" />}
+        />
+        <Route
+          path="/reports"
+          element={<AreaPage areaKey="reports" />}
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute currentUser={currentUser} allowedRoles={['ORGANIZATION_ADMIN', 'BRANCH_ADMIN']}>
+              <AreaPage areaKey="settings" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/roadmap"
+          element={<AreaPage areaKey="roadmap" />}
+        />
 
-      {/* 6. Protected 55 Launch Feature Sub-Pages */}
-      {FEATURE_REGISTRY.filter((f) => f.phase === 'launch').map((feature) => {
-        const Component = lazyComponents[feature.id]
-        if (!Component) return null
+        {/* 6. Protected 55 Launch Feature Sub-Pages */}
+        {FEATURE_REGISTRY.filter((f) => f.phase === 'launch').map((feature) => {
+          const Component = lazyComponents[feature.id]
+          if (!Component) return null
 
-        return (
-          <Route
-            key={feature.id}
-            path={feature.route}
-            element={
-              <ProtectedRoute currentUser={currentUser} allowedRoles={feature.roles}>
-                <Suspense fallback={<PageFallback />}>
-                  <Component />
-                </Suspense>
-              </ProtectedRoute>
-            }
-          />
-        )
-      })}
-
-      {/* 7. Protected Coming Soon for Roadmap Items */}
-      <Route
-        path="/coming-soon/:id"
-        element={
-          <ProtectedRoute currentUser={currentUser}>
+          const featurePage = (
             <Suspense fallback={<PageFallback />}>
-              <ComingSoonPage />
+              <Component />
             </Suspense>
-          </ProtectedRoute>
-        }
-      />
+          )
+
+          return (
+            <Route
+              key={feature.id}
+              path={feature.route}
+              element={
+                <ProtectedRoute currentUser={currentUser} allowedRoles={feature.roles}>
+                  {feature.area.toLowerCase() === 'appointments' ? (
+                    <AppointmentsWorkspace activeFeatureId={feature.id}>{featurePage}</AppointmentsWorkspace>
+                  ) : featurePage}
+                </ProtectedRoute>
+              }
+            />
+          )
+        })}
+
+        {/* 7. Protected Coming Soon for Roadmap Items */}
+        <Route
+          path="/coming-soon/:id"
+          element={
+            <ProtectedRoute currentUser={currentUser}>
+              <Suspense fallback={<PageFallback />}>
+                <ComingSoonPage />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+      </Route>
 
       {/* 8. Shared Not Built Yet for unmatched marketing buttons */}
       <Route path="/not-built-yet" element={<NotBuiltYetPage />} />

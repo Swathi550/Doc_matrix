@@ -25,17 +25,16 @@ describe('DocMatrix Architecture, Navigation & Security Validation', () => {
     window.location.hash = ''
   })
 
-  // 1. BANNER BEHAVIOR (Decision D2: Slim non-dismissable bar on EVERY page)
-  it('renders exactly one slim DemoBanner on public landing page (/), internal, auth, and legal pages', () => {
+  // 1. BANNER BEHAVIOR (Demo banner removed per clinic requirements)
+  it('confirms DemoBanner is removed from public landing page (/), internal, auth, and legal pages', () => {
     // Landing Page
     const { unmount: unmountHome } = render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>
     )
-    expect(screen.getByTestId('demo-banner')).toBeInTheDocument()
-    expect(screen.getAllByTestId('demo-banner')).toHaveLength(1)
-    expect(screen.getByText(/Demo only. Nothing is saved or sent. Do not enter real patient data./i)).toBeInTheDocument()
+    expect(screen.queryByTestId('demo-banner')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Demo only. Nothing is saved or sent. Do not enter real patient data./i)).not.toBeInTheDocument()
     unmountHome()
 
     // Login Page
@@ -44,7 +43,7 @@ describe('DocMatrix Architecture, Navigation & Security Validation', () => {
         <App />
       </MemoryRouter>
     )
-    expect(screen.getByTestId('demo-banner')).toBeInTheDocument()
+    expect(screen.queryByTestId('demo-banner')).not.toBeInTheDocument()
     unmountLogin()
 
     // Sign Up Page
@@ -53,7 +52,7 @@ describe('DocMatrix Architecture, Navigation & Security Validation', () => {
         <App />
       </MemoryRouter>
     )
-    expect(screen.getByTestId('demo-banner')).toBeInTheDocument()
+    expect(screen.queryByTestId('demo-banner')).not.toBeInTheDocument()
     unmountSignup()
 
     // Terms Page
@@ -62,7 +61,7 @@ describe('DocMatrix Architecture, Navigation & Security Validation', () => {
         <App />
       </MemoryRouter>
     )
-    expect(screen.getByTestId('demo-banner')).toBeInTheDocument()
+    expect(screen.queryByTestId('demo-banner')).not.toBeInTheDocument()
     unmountTerms()
 
     // Privacy Page
@@ -71,7 +70,7 @@ describe('DocMatrix Architecture, Navigation & Security Validation', () => {
         <App />
       </MemoryRouter>
     )
-    expect(screen.getByTestId('demo-banner')).toBeInTheDocument()
+    expect(screen.queryByTestId('demo-banner')).not.toBeInTheDocument()
     unmountPrivacy()
 
     // App / Dashboard Page
@@ -81,8 +80,7 @@ describe('DocMatrix Architecture, Navigation & Security Validation', () => {
         <App />
       </MemoryRouter>
     )
-    const banners = screen.getAllByTestId('demo-banner')
-    expect(banners).toHaveLength(1)
+    expect(screen.queryByTestId('demo-banner')).not.toBeInTheDocument()
     unmountDash()
   })
 
@@ -185,8 +183,8 @@ describe('DocMatrix Architecture, Navigation & Security Validation', () => {
     unmount()
   })
 
-  // 6. TWO-STEP LOGIN & OTP FLOW
-  it('implements 2-step OTP verification with 123456 and stores ONLY user id in sessionStorage', async () => {
+  // 6. EMAIL & PASSWORD LOGIN FLOW
+  it('implements email and password authentication and stores ONLY user id in sessionStorage', async () => {
     const onLoginSuccess = vi.fn()
 
     render(
@@ -195,37 +193,27 @@ describe('DocMatrix Architecture, Navigation & Security Validation', () => {
       </MemoryRouter>
     )
 
-    // Step 1: Mobile number entry
-    expect(screen.getByText(/Sign in to Clinic Portal/i)).toBeInTheDocument()
-    const sendCodeBtn = screen.getByText(/Request Verification Code/i)
-    fireEvent.click(sendCodeBtn)
+    // Heading and Subtitle check
+    expect(screen.getByText(/Welcome back/i)).toBeInTheDocument()
+    expect(screen.getByText(/Sign in to access your clinic portal/i)).toBeInTheDocument()
 
-    // Step 2: 6-digit code entry
-    expect(screen.getByText(/Enter 6-digit Code/i)).toBeInTheDocument()
-    expect(screen.getByText(/If this number is registered, a code has been sent/i)).toBeInTheDocument()
-    expect(screen.getByText(/Demo code: 123456/i)).toBeInTheDocument()
+    // Email and Password inputs
+    const emailInput = screen.getByLabelText(/Email address/i)
+    const passwordInput = screen.getByLabelText(/^Password$/i)
+    const signInBtn = screen.getByRole('button', { name: /^Sign in$/i })
 
-    // Test invalid code shows neutral error message
-    const codeInput = screen.getByPlaceholderText(/123456/i)
-    fireEvent.change(codeInput, { target: { value: '999999' } })
-    const verifyBtn = screen.getByText(/Verify Code & Continue/i)
-    fireEvent.click(verifyBtn)
-    expect(screen.getByText(/That code didn't work. Check it or request a new one./i)).toBeInTheDocument()
+    // Test validation
+    fireEvent.click(signInBtn)
+    expect(screen.getByText(/Please enter your email address/i)).toBeInTheDocument()
 
-    // Test "Change number" action goes back to step 1
-    const changeBtn = screen.getByText(/Change number/i)
-    fireEvent.click(changeBtn)
-    expect(screen.getByText(/Sign in to Clinic Portal/i)).toBeInTheDocument()
+    // Fill valid credentials and submit
+    fireEvent.change(emailInput, { target: { value: 'demo@docmatrix.com' } })
+    fireEvent.change(passwordInput, { target: { value: 'Demo@1234' } })
+    fireEvent.click(signInBtn)
 
-    // Request code again
-    fireEvent.click(screen.getByText(/Request Verification Code/i))
-
-    // Test valid code logs in
-    const codeInput2 = screen.getByPlaceholderText(/123456/i)
-    fireEvent.change(codeInput2, { target: { value: '123456' } })
-    fireEvent.click(screen.getByText(/Verify Code & Continue/i))
-
-    expect(onLoginSuccess).toHaveBeenCalled()
+    await waitFor(() => {
+      expect(onLoginSuccess).toHaveBeenCalled()
+    })
     // SessionStorage must hold ONLY user id
     const stored = sessionStorage.getItem('docmatrix-demo-session')
     expect(stored).toBe('usr-101')
@@ -233,48 +221,49 @@ describe('DocMatrix Architecture, Navigation & Security Validation', () => {
     expect(stored).not.toContain('role')
   })
 
-  // 7. 5-TRY LOCKOUT
-  it('locks out user after 5 incorrect code attempts', () => {
+  // 7. PASSWORD VISIBILITY TOGGLE & VALIDATION
+  it('toggles password visibility and validates minimum length', () => {
     render(
       <MemoryRouter initialEntries={['/login']}>
         <AuthPage view="login" />
       </MemoryRouter>
     )
 
-    fireEvent.click(screen.getByText(/Request Verification Code/i))
-    const codeInput = screen.getByPlaceholderText(/123456/i)
-    const verifyBtn = screen.getByText(/Verify Code & Continue/i)
+    const passwordInput = screen.getByLabelText(/^Password$/i)
+    expect(passwordInput.type).toBe('password')
 
-    for (let i = 0; i < 5; i++) {
-      fireEvent.change(codeInput, { target: { value: `11111${i}` } })
-      fireEvent.click(verifyBtn)
-    }
+    const toggleBtn = screen.getByLabelText(/Show password/i)
+    fireEvent.click(toggleBtn)
+    expect(passwordInput.type).toBe('text')
 
-    expect(screen.getByText(/Too many tries. Request a new code./i)).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText(/Hide password/i))
+    expect(passwordInput.type).toBe('password')
+
+    // Test short password validation (minimum 8 characters)
+    const emailInput = screen.getByLabelText(/Email address/i)
+    fireEvent.change(emailInput, { target: { value: 'demo@docmatrix.com' } })
+    fireEvent.change(passwordInput, { target: { value: '123' } })
+    fireEvent.click(screen.getByRole('button', { name: /^Sign in$/i }))
+    expect(screen.getByText(/Password must be at least 8 characters/i)).toBeInTheDocument()
   })
 
-  // 8. SIGN-UP VALIDATION (Terms mandatory, WhatsApp optional)
-  it('validates clinic sign-up: terms agreement is required, WhatsApp consent is optional', () => {
+  // 8. SIGN-UP VALIDATION (Terms mandatory)
+  it('validates clinic sign-up: all fields and terms agreement required', () => {
     render(
       <MemoryRouter initialEntries={['/signup']}>
         <AuthPage view="signup" />
       </MemoryRouter>
     )
 
-    expect(screen.getByText(/Register Dental Practice/i)).toBeInTheDocument()
-    const submitBtn = screen.getByText(/Verify Phone & Create Practice/i)
-
-    // Verify WhatsApp updates checkbox is unchecked by default
-    const whatsappCheckbox = screen.getByRole('checkbox', { name: /product updates.*WhatsApp/i })
-    expect(whatsappCheckbox.checked).toBe(false)
+    expect(screen.getByText(/Create clinic account/i)).toBeInTheDocument()
+    const submitBtn = screen.getByRole('button', { name: /^Sign up$/i })
 
     // Submit empty form -> displays validation errors
     fireEvent.click(submitBtn)
-    expect(screen.getByText(/Clinic name is required/i)).toBeInTheDocument()
-    expect(screen.getByText(/Full name is required/i)).toBeInTheDocument()
-    expect(screen.getByText(/Mobile number is required/i)).toBeInTheDocument()
-    expect(screen.getByText(/City or town is required/i)).toBeInTheDocument()
-    expect(screen.getByText(/You must agree to the Terms and Privacy Notice/i)).toBeInTheDocument()
+    expect(screen.getByText(/Please enter your full name/i)).toBeInTheDocument()
+    expect(screen.getByText(/Please enter your clinic name/i)).toBeInTheDocument()
+    expect(screen.getByText(/Please enter your email address/i)).toBeInTheDocument()
+    expect(screen.getByText(/You must agree to the Terms of Service and Privacy Policy/i)).toBeInTheDocument()
   })
 
   // 9. ROUTE GUARDS & ROLE RESTRICTIONS (Decision D4)
@@ -285,7 +274,7 @@ describe('DocMatrix Architecture, Navigation & Security Validation', () => {
         <App />
       </MemoryRouter>
     )
-    expect(screen.getByText(/Sign in to Clinic Portal/i)).toBeInTheDocument()
+    expect(screen.getByText(/Sign in to access your clinic portal/i)).toBeInTheDocument()
     unmountDash()
 
     // Logged-in admin to /login -> redirects to /dashboard
@@ -498,6 +487,49 @@ describe('DocMatrix Architecture, Navigation & Security Validation', () => {
     }
 
     scanFiles(srcDir)
+  })
+
+  // 21. PERSISTENT APPLICATION SHELL & INLINE SUBMODULE NAVIGATION (Acceptance Criteria)
+  it('renders submodules inline within the persistent dashboard layout without redundant horizontal navigation', async () => {
+    sessionStorage.setItem('docmatrix-demo-session', 'usr-101')
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <App />
+      </MemoryRouter>
+    )
+
+    // 1. Verify initial Dashboard view with persistent shell
+    expect(screen.getByText(/Clinic Operations Dashboard/i)).toBeInTheDocument()
+    expect(screen.getByText('DOC MATRIX')).toBeInTheDocument()
+
+    // 2. Click Appointments -> Book appointment
+    const bookingBtn = screen.getByTestId('sidebar-link-appt.new')
+    expect(bookingBtn).toBeInTheDocument()
+    fireEvent.click(bookingBtn)
+
+    // Wait for the booking submodule to render inline
+    await waitFor(() => {
+      expect(screen.getByTestId('feature-page-appt.new')).toBeInTheDocument()
+    })
+
+    // 3. Confirm persistent header and sidebar remain visible
+    expect(screen.getByText('DOC MATRIX')).toBeInTheDocument()
+    expect(screen.getByTestId('sidebar-link-appt.new')).toBeInTheDocument()
+    expect(screen.getByText('Clinic Dashboard')).toBeInTheDocument()
+
+    // 4. Confirm redundant horizontal navigation bar is NOT present
+    expect(screen.queryByText(/Appointments Modules:/i)).not.toBeInTheDocument()
+
+    // 5. The daily schedule is integrated in the booking screen
+    expect(screen.getByText('Daily schedule')).toBeInTheDocument()
+    expect(screen.getByText('DOC MATRIX')).toBeInTheDocument()
+
+    // 6. Click Clinic Dashboard in sidebar to return to main dashboard
+    const dashBtn = screen.getByText('Clinic Dashboard')
+    fireEvent.click(dashBtn)
+    await waitFor(() => {
+      expect(screen.getByText(/Clinic Operations Dashboard/i)).toBeInTheDocument()
+    })
   })
 })
 

@@ -37,7 +37,7 @@ The goal was to unify the existing Vite marketing web application (running on `l
 ### 4. 3-Click Reachability for All 55 Launch Features
 - **Requirement:** Every launch feature page must be reachable from the landing page in 3 clicks or fewer.
 - **Implementation:**
-  - **Option A (Via Landing Cards):** Click 1: Click any core module card (e.g. "Appointments & Operations") $\rightarrow$ lands on `/appointments` Area Page. Click 2: Click any subpage (e.g. "Live queue") $\rightarrow$ lands on `/appointments/queue`. (2 clicks total).
+  - **Option A (Via Landing Cards):** Click 1: Click any core module card (e.g. "Appointments & Operations") $\rightarrow$ lands on `/appointments` Area Page. Click 2: Click any subpage (e.g. "Book appointment") $\rightarrow$ lands on `/appointments/new`. (2 clicks total).
   - **Option B (Via Staff Portal):** Click 1: Click "Login" or "Dashboard" $\rightarrow$ lands on `/dashboard`. Click 2: Click any feature in the sidebar or area switcher $\rightarrow$ lands directly on the feature page. (2 clicks total).
   - **Option C (Cross-Feature Navigation):** Every subpage contains sibling tabs allowing instant 1-click switching among all pages in the same clinical domain.
 

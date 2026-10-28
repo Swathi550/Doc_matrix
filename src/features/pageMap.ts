@@ -10,13 +10,6 @@ export interface PageMeta {
 
 export const LAUNCH_PAGE_MAP: PageMeta[] = [
   {
-    id: 'appt.queue',
-    area: 'appointments',
-    filename: 'LiveQueuePage.tsx',
-    componentName: 'LiveQueuePage',
-    importFn: () => import('@/pages/appointments/LiveQueuePage'),
-  },
-  {
     id: 'appt.new',
     area: 'appointments',
     filename: 'NewAppointmentPage.tsx',
@@ -24,18 +17,18 @@ export const LAUNCH_PAGE_MAP: PageMeta[] = [
     importFn: () => import('@/pages/appointments/NewAppointmentPage'),
   },
   {
-    id: 'appt.calendar',
-    area: 'appointments',
-    filename: 'CalendarPage.tsx',
-    componentName: 'CalendarPage',
-    importFn: () => import('@/pages/appointments/CalendarPage'),
-  },
-  {
     id: 'appt.detail',
     area: 'appointments',
     filename: 'AppointmentDetailPage.tsx',
     componentName: 'AppointmentDetailPage',
     importFn: () => import('@/pages/appointments/AppointmentDetailPage'),
+  },
+  {
+    id: 'appt.details-list',
+    area: 'appointments',
+    filename: 'AppointmentDetailsPage.tsx',
+    componentName: 'AppointmentDetailsPage',
+    importFn: () => import('@/pages/appointments/AppointmentDetailsPage'),
   },
   {
     id: 'appt.enquiries',
